@@ -4,6 +4,7 @@
 
 
 from tkinter import *
+import tkinter as tk
 
 def button_click(number):
     current = e.get()
