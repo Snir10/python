@@ -13,26 +13,30 @@ def button_search():
     e.insert(0, 'clicked!')
     time.sleep(1)
     e.delete(0, END)
-    selection = "You selected the option " + str(variable.get()+'\t'+v.get())
+    selection = "option: " + str(variable.get()+'\t'+v.get()+'\t'+str(scal.get()))
     e.insert(0, selection)
 
 def sel():
-    e.delete(0, END)
-    selection = "You selected the option " + str(variable.get())
-    e.insert(0, selection)
+    # e.delete(0, END)
+    # selection = "option: " + str(variable.get())
+    # e.insert(0, selection)
+    print("radio choosed")
+
+def scal_func(scal_val):
+    print(scal_val)
 
 def tkinter_trying():
     root.title("Tkinter APP")
     root.geometry("600x600")
 
-    headline = Label(root, height=2, text='Snirs APP', font='times')
+    headline = Label(root, height=2, width=10, font='Calibari 30', text='Snirs APP')
 
     radiobutton2 = Radiobutton(root, height=1, padx=2, pady=2, text='NO', bg='#77BBBB', state=NORMAL, command=sel, variable=v, value="NO")
     radiobutton1 = Radiobutton(root, height=1, padx=2, pady=2, text='YES', bg='#77BBBB', state=ACTIVE, command=sel, variable=v, value="YES")
     
     dropdown = OptionMenu(root, variable, *countries, command=display_selected())
 
-    scroller = Scale(root, width=15, orient=HORIZONTAL, command=print("Scroll"))
+    scroller = Scale(root, width=15, orient=HORIZONTAL, variable=scal, command=scal_func(scal))
 
     button_clear = Button(root, text="Search", state=NORMAL, command=button_search, padx=10, pady=10, fg="black", bg="#ffffff")
 
@@ -59,5 +63,5 @@ countries = ['All', 'Bahamas', 'Canada', 'Cuba', 'United States', 'Mexico', 'Jap
 variable = StringVar()
 variable.set(countries[0])
 v= StringVar()
-
+scal = IntVar()
 tkinter_trying()
