@@ -25,23 +25,22 @@ def tkinter_trying():
     root.title("Tkinter APP")
     root.geometry("600x600")
 
-
-
-
-
-
-
+    headline = Label(root, height=2, text='Snirs APP', font='times')
 
     radiobutton2 = Radiobutton(root, height=1, padx=2, pady=2, text='NO', bg='#77BBBB', state=NORMAL, command=sel, variable=v, value="NO")
     radiobutton1 = Radiobutton(root, height=1, padx=2, pady=2, text='YES', bg='#77BBBB', state=ACTIVE, command=sel, variable=v, value="YES")
     
     dropdown = OptionMenu(root, variable, *countries, command=display_selected())
 
+    scroller = Scale(root, width=15, orient=HORIZONTAL, command=print("Scroll"))
+
     button_clear = Button(root, text="Search", state=NORMAL, command=button_search, padx=10, pady=10, fg="black", bg="#ffffff")
 
     #Order Buttons
+    headline.grid(row=0, column=0, columnspan=4)
     dropdown.grid(row=2, column=0)
-    button_clear.grid(row=7, column=0)
+    button_clear.grid(row=8, column=0)
+    scroller.grid(row=7, column=0)
 
     radiobutton1.grid(row=5, column=0)
     radiobutton2.grid(row=6, column=0)
