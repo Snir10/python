@@ -38,29 +38,28 @@ def interact_between_links(link_list):
         get_asins(a_link_list[cc])
         time.sleep(2)
 
-def get_asins(url):
+def get_asins(url, counter=0):
     driver = webdriver.Chrome()
-    browser = driver.get(url)
+    driver.get(url)
     time.sleep(5)
-    #items = driver.find_element(by=By.CLASS_NAME, value='a-column a-span12 a-text-center')
-    items = driver.find_elements_by_class_name()
-    print(items +' '+ str(items))
+    asins = driver.find_elements(by=By.CLASS_NAME, value=asin_link_class)
+    X = asins.find_element(by=By.XPATH, value='//*[@id="h10-asin-B074CR89QG"]/div[3]/div/a[2]')
+    print(X)
 
-    # for a in asins:
-    #     link = a.get_attribute('href')
-    #
-    #     f = furl(link)
-    #     link = link.split("/")
-    #     try:
-    #         print(link[3]+'\t'+f.args['pd_rd_i'])
-    #     except:
-    #         print("An exception occurred")
-    #     counter += 1
 
-    for item in items:
-        feedback = item.find_element(by=By.CSS_SELECTOR, value='gridItemRoot > div > div.zg-grid-general-faceout > div > a:nth-child(1)')
-        price = item.find_element(by=By.CSS_SELECTOR, value='gridItemRoot > div > div.zg-grid-general-faceout > div > div:nth-child(4)')
-        print('price: '+str(price)+'\t'+'feedback:'+str(feedback))
+    print(str(asins))
+
+    for a in asins:
+        link = a.get_attribute('href')
+
+        f = furl(link)
+        link = link.split("/")
+        try:
+            print(link[3]+'\t'+f.args['pd_rd_i'])
+        except:
+            print("An exception occurred")
+        counter += 1
+
 
     driver.close()
     print('\nSUCCESS\nnumber of ASINS: ' + str(counter))
@@ -68,16 +67,14 @@ def get_asins(url):
 def main():
     #$$$$$$$$$$$$$$$$$$$$$$ START $$$$$$$$$$$$$$$$$$$$$$$#
     # $$$$$$$$$$$$$$$$$$$$$$ getting best seller URL $$$$$$$$$$$$$$$$$$$$$$$#
-    browser = driver.get('https://www.amazon.com/gp/bestsellers/?ref_=nav_cs_bestsellers')
-    #time.sleep(3)
-    departments = driver.find_elements_by_class_name(asin_link_class)
-    #time.sleep(3)
+    driver.get('https://www.amazon.com/gp/bestsellers/?ref_=nav_cs_bestsellers')
+    departments = driver.find_elements(by=By.CLASS_NAME, value=dep_link_class)
     # $$$$$$$$$$$$$$$$$$$$$$ building dep URL $$$$$$$$$$$$$$$$$$$$$$$#
     link_list = get_department_url(departments)
-    #close tab
     driver.close()
     print("Finished take amazon main department")
     time.sleep(3)
+
     #interaction between all links
     print("now interact_between_links(link_list)")
     interact_between_links(link_list)
@@ -86,8 +83,15 @@ counter = 0
 driver = webdriver.Chrome()
 amazon_url = "https://www.amazon.com/"
 #class for amazon best seller departments
-asin_link_class = '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf'
+dep_link_class = '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf'
+asin_link_class = '_p13n-zg-list-grid-desktop_style_grid-column__2hIsc'
 a_link_list = []
 
 
 main()
+
+
+#whole grid -
+
+#
+#/html/body/div[1]/div[3]/div/div/div[1]/div/div/div[2]/div[1]/div[1]/div[1]/div/div[3]/div/a[2]
