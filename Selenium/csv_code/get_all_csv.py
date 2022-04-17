@@ -11,7 +11,7 @@ def get_csv_files(dir):
     # and filter function uses the returned boolean value to filter .csv files from list files.
 
     csv_counter = len(csv_files)
-    print(csv_files)
+    #print(csv_files)
     return csv_files
 def print_csv_content(csv_files):
     counter = 0
@@ -31,7 +31,7 @@ def print_csv_content(csv_files):
                   + 'rev_count: ' + row[4] + '\t\t\t'
                   + 'rev_rate: '+ row[5]+ '\t'
                   + row[2]+ '\t'
-                  + row[0])
+                  + row[0][:35])
         print('--> This Script has printed: '+str(counter)+' Products')
 
         file.close()
@@ -44,7 +44,7 @@ def create_csv_file(csv_files, head):
         for csv_file in csv_files:
             # write multiple rows
             file = open('/Users/user/Downloads/Helium_10_ASIN_Grabber/' + csv_file)
-            print(csv_file)
+            #print(csv_file)
             csvreader = csv.reader(file)
             header = next(csvreader)
             rows = []
@@ -53,14 +53,10 @@ def create_csv_file(csv_files, head):
 
             file.close()
 
-
-
-            writer.writerows(csv_file)
-
-asin_counter = 0
 src_dir = '/Users/user/Downloads/Helium_10_ASIN_Grabber'
 header = ['Product Name', 'ASIN', 'Brand', 'Price', 'Reviews Count', 'Reviews Rate', 'BSR']
 
+#running program
 csv_files = get_csv_files(src_dir)
 print_csv_content(csv_files)
 create_csv_file(csv_files, header)
