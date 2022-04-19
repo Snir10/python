@@ -3,6 +3,10 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
+
+import logging
+import sys
+
 #functions
 def print_product(count, product_name, asin,  rate_and_review_count, lastprice, start_price):
     print(count+')\t'+product_name[0].text[:25] + '\t' +
@@ -11,10 +15,9 @@ def print_product(count, product_name, asin,  rate_and_review_count, lastprice, 
           rate_and_review_count[0].accessible_name[18:] + '\t\t\t' +
           lastprice[0].text + '\t\t\t' +
           start_price[0].text)
-def get_all_product_info(url):
+def get_all_product_info():
 
-    browser = driver.get(url)
-    next_url = ''
+    #next_url = ''
     counter = 0
 
     html = driver.find_element(By.TAG_NAME, value='html')
@@ -59,16 +62,20 @@ def get_all_product_info(url):
         print('no Next Button URL == End of pages')
         return 'no URL'
 
+#departments
 
 
 
-
-c_all = 0
 driver = webdriver.Chrome()
-url = 'https://www.amazon.com/Best-Sellers-Pet-Supplies/zgbs/pet-supplies/ref=zg_bs_nav_0'
-# url = 'https://www.amazon.com/Best-Sellers-Pet-Supplies/zgbs/pet-supplies/ref=zg_bs_nav_0'
 
-
-x = get_all_product_info(url)
-if x is not None:
-    get_all_product_info(x)
+urls = ['https://www.amazon.com/Best-Sellers-Pet-Supplies/zgbs/pet-supplies/ref=zg_bs_nav_0',
+        'https://www.amazon.com/Best-Sellers-Home-Kitchen-Bath-Products/zgbs/home-garden/1063236/ref=zg_bs_nav_home-garden_1'
+        ]
+for url in urls:
+    browser = driver.get(url)
+    x = get_all_product_info()
+    driver.close()
+    if x is not None:
+        driver = webdriver.Chrome()
+        driver.get(x)
+        y = get_all_product_info()
