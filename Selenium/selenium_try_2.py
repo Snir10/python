@@ -4,7 +4,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 #functions
-
+def print_product(count, product_name, asin,  rate_and_review_count, lastprice, start_price):
+    print(count+')\t'+product_name[0].text[:25] + '\t' +
+          asin + '\t' +
+          rate_and_review_count[0].accessible_name[:4] + '\t\t\t' +
+          rate_and_review_count[0].accessible_name[18:] + '\t\t\t' +
+          lastprice[0].text + '\t\t\t' +
+          start_price[0].text)
 def get_all_product_info(url):
 
     browser = driver.get(url)
@@ -40,7 +46,7 @@ def get_all_product_info(url):
 
         except:
             counter += 1
-            print('###\t ERROR on Product->'+str(i)+'\t###')
+            print(str(i)+')\t\t ###\tERROR on Product\t###')
 
     print('-->\tNum Of Product errors: '+str(counter)+'\t<--')
 
@@ -50,14 +56,9 @@ def get_all_product_info(url):
         next_url = driver.current_url
         return next_url
     else:
-        print('no Next Button URL')
+        print('no Next Button URL == End of pages')
         return 'no URL'
-def print_product(count, product_name, asin,  rate_and_review_count, lastprice, start_price):
-    print(count+')\t'+product_name[0].text[:25] + '\t' +
-          asin + '\t' +
-          rate_and_review_count[0].accessible_name + '\t' +
-          lastprice[0].text + '\t' +
-          start_price[0].text)
+
 
 
 
@@ -65,6 +66,7 @@ def print_product(count, product_name, asin,  rate_and_review_count, lastprice, 
 c_all = 0
 driver = webdriver.Chrome()
 url = 'https://www.amazon.com/Best-Sellers-Pet-Supplies/zgbs/pet-supplies/ref=zg_bs_nav_0'
+# url = 'https://www.amazon.com/Best-Sellers-Pet-Supplies/zgbs/pet-supplies/ref=zg_bs_nav_0'
 
 
 x = get_all_product_info(url)
