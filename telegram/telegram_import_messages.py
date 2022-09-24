@@ -40,6 +40,8 @@ username = config['Telegram']['username']
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
 
+
+
 async def main(phone):
     await client.start()
     print("Client Created")
@@ -67,6 +69,7 @@ async def main(phone):
     all_messages = []
     total_messages = 0
     total_count_limit = 0
+    json_counter = 0
 
     while True:
         print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages)
@@ -83,16 +86,30 @@ async def main(phone):
         if not history.messages:
             break
         messages = history.messages
+
+
+        msg_count = 0
         for message in messages:
             all_messages.append(message.to_dict())
-            print(str(message))
+            title = str(message).split(",")
+            title = title[9]+title[10]
+            print(title)
+
+            #print(str(msg_count)+' '+str(message)+str('  '+title))
+            msg_count += 1
         offset_id = messages[len(messages) - 1].id
         total_messages = len(all_messages)
+
+        with open('channel_messages'+str(json_counter)+'.json', 'w') as outfile:
+            json.dump(all_messages, outfile, cls=DateTimeEncoder)
+            outfile.close()
+        json_counter += 1
+
+
+
         if total_count_limit != 0 and total_messages >= total_count_limit:
             break
 
-    with open('channel_messages.json', 'w') as outfile:
-        json.dump(all_messages, outfile, cls=DateTimeEncoder)
 
 with client:
     client.loop.run_until_complete(main(phone))
