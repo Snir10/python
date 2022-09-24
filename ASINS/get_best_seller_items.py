@@ -3,16 +3,10 @@
 # this program collecting all asins from "BEST SELLERS" page on amazon
 #this class contain amazon best sellers links
 #<div role="treeitem" class="_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-small__nleKL"><a href="/Best-Sellers-Amazon-Launchpad/zgbs/boost/ref=zg_bs_nav_0">Amazon Launchpad</a></div>
-import selenium
-import html
 from furl import furl
 
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-import time
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 import time
 
 def get_department_url(departments):
@@ -43,7 +37,7 @@ def get_asins(url, counter=0):
     driver.get(url)
     time.sleep(5)
     asins = driver.find_elements(by=By.CLASS_NAME, value=asin_link_class)
-    X = asins.find_element(by=By.XPATH, value='//*[@id="h10-asin-B074CR89QG"]/div[3]/div/a[2]')
+    X = driver.find_element(by=By.XPATH, value='//*[@id="h10-asin-B074CR89QG"]/div[3]/div/a[2]')
     print(X)
 
 
