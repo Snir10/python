@@ -94,15 +94,17 @@ async def main(phone):
             title = str(message).split(",")
             title = title[9]+title[10]
             print(title)
+            path = await client.download_media(message.media, "/Users/user/Desktop/Backup")
+            print('File saved to', path)  # printed after download is done
 
-            #print(str(msg_count)+' '+str(message)+str('  '+title))
             msg_count += 1
         offset_id = messages[len(messages) - 1].id
         total_messages = len(all_messages)
 
         with open('channel_messages'+str(json_counter)+'.json', 'w') as outfile:
             json.dump(all_messages, outfile, cls=DateTimeEncoder)
-            outfile.close()
+
+        outfile.close()
         json_counter += 1
 
 
