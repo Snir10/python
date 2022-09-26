@@ -1,10 +1,8 @@
 import configparser
 import json
-import asyncio
 import os
 import re
 from datetime import date, datetime
-import telethon.sync
 import logging
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
@@ -41,6 +39,8 @@ username = config['Telegram']['username']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
+
+
 
 
 
@@ -107,6 +107,16 @@ async def main(phone):
             url = 'no url'
             price = 'no price'
             title = 'no title'
+
+            path = '/Users/user/Desktop/Backup/'
+            full_file_path = await client.download_media(message.media, path)
+            filename = full_file_path
+            file_id = str(message.id)
+            new_file_name = path + file_id
+            # TODO = renaming file
+            os.rename(filename, path + file_id)
+
+
             if msg_content != '':
                 url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
                 price = str(re.findall(r"\$[^ ]+", msg_content))
@@ -118,10 +128,14 @@ async def main(phone):
 
 
 
-            path = await client.download_media(message.media, "/Users/user/Desktop/Backup/")
-            print('item ' + str(msg_count) +'\tlink:'+str(url)+'\tprice:'+str(price)+'\t'
-                  +'Title:'+title + '\t Saved -> ', path[11::]+'\tMessage ID:' + str(message.id))  # printed after download is done
-
+            #path = await client.download_media(message.media, "/Users/user/Desktop/Backup/")
+            print('item ' + str(msg_count) +'\t'+
+                  'Title:' + title + '\t' +
+                  'price:' +str(price) + '\t' +
+                  'link:' + str(url) + '\t' +
+                  'Saved-> ' +new_file_name+ '\t' +
+                  'Message ID:' + str(message.id))  # printed after download is done
+            #full_file_path[11::]+
             #TODO
             #logging.info('item ' + str(msg_count) + '\tMessage ID:' + str(message.id)+title + '\t Saved -> ', path[11::])
             #logging.info('new item')
