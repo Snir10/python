@@ -1,9 +1,11 @@
 import configparser
 import json
 import asyncio
+import os
+import re
 from datetime import date, datetime
 import telethon.sync
-
+import logging
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import (GetHistoryRequest)
@@ -43,6 +45,9 @@ client = TelegramClient(username, api_id, api_hash)
 
 
 async def main(phone):
+    #log to file events
+    logging.basicConfig(filename="log.txt", format="[%(asctime)s] [%(process)d] [%(levelname)s] [%(message)s]", level=logging.DEBUG)
+
     await client.start()
     print("Client Created")
     # Ensure you're authorized
@@ -72,6 +77,7 @@ async def main(phone):
     json_counter = 0
 
     while True:
+        logging.warning('Hello From Root')
         print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages)
         history = await client(GetHistoryRequest(
             peer=my_channel,
@@ -91,12 +97,34 @@ async def main(phone):
         msg_count = 0
         for message in messages:
             all_messages.append(message.to_dict())
-            title = str(message).split(",")
-            title = title[9]+title[10]
-            print(title)
-            path = await client.download_media(message.media, "/Users/user/Desktop/Backup")
-            print('File saved to', path)  # printed after download is done
 
+
+            msg_content = 'no title'
+            msg_content = str(message.message)
+
+
+            #TODO url for print
+            url = 'no url'
+            price = 'no price'
+            title = 'no title'
+            if msg_content != '':
+                url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
+                price = str(re.findall(r"\$[^ ]+", msg_content))
+                title = msg_content.split('-')[0]
+                #edit price outpout
+                str(price)
+                price = price.split('\\')[0][2::]
+                #price = price[2::]
+
+
+
+            path = await client.download_media(message.media, "/Users/user/Desktop/Backup/")
+            print('item ' + str(msg_count) +'\tlink:'+str(url)+'\tprice:'+str(price)+'\t'
+                  +'Title:'+title + '\t Saved -> ', path[11::]+'\tMessage ID:' + str(message.id))  # printed after download is done
+
+            #TODO
+            #logging.info('item ' + str(msg_count) + '\tMessage ID:' + str(message.id)+title + '\t Saved -> ', path[11::])
+            #logging.info('new item')
             msg_count += 1
         offset_id = messages[len(messages) - 1].id
         total_messages = len(all_messages)
