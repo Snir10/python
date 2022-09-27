@@ -1,7 +1,12 @@
 import configparser
 import json
 import os
+import os.path
 import re
+import csv
+import requests
+from pathlib import Path
+
 from datetime import date, datetime
 import logging
 from telethon import TelegramClient
@@ -12,7 +17,6 @@ from telethon.tl.types import (
 )
 
 
-# some functions to parse json date
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, datetime):
@@ -44,12 +48,30 @@ client = TelegramClient(username, api_id, api_hash)
 
 
 
+def send_msg_to_csv(title, price, link, nexturl, id, images, path):
+
+    with open('/Users/user/Desktop/Backup/products.csv', 'a', encoding='UTF8', newline='') as f:
+        data = [title, price, link, nexturl, id, images, path]
+        writer = csv.writer(f)
+        writer.writerow(data)
+def create_csv():
+    with open('/Users/user/Desktop/Backup/products.csv', 'x', encoding='UTF8', newline='') as f:
+        header = ['title', 'price', 'link','next url', 'id', 'images', 'path']
+        writer = csv.writer(f)
+        writer.writerow(header)
+
+
+
+
+
+
+
 async def main(phone):
     #log to file events
     logging.basicConfig(filename="log.txt", format="[%(asctime)s] [%(process)d] [%(levelname)s] [%(message)s]", level=logging.DEBUG)
 
     await client.start()
-    print("Client Created")
+    print("##\tClient Created Successfully\t##")
     # Ensure you're authorized
     if await client.is_user_authorized() == False:
         await client.send_code_request(phone)
@@ -75,7 +97,9 @@ async def main(phone):
     total_messages = 0
     total_count_limit = 0
     json_counter = 0
+    ids_obj = []
 
+    #answer = input('Do you want to pull products? please type yes/no:\n')
     while True:
         logging.warning('Hello From Root')
         print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages)
@@ -98,55 +122,87 @@ async def main(phone):
         for message in messages:
             all_messages.append(message.to_dict())
 
-
-            msg_content = 'no title'
+            msg_content = 'no'
             msg_content = str(message.message)
 
 
-            #TODO url for print
-            url = 'no url'
-            price = 'no price'
-            title = 'no title'
+            url = 'no'
+            price = 'no'
+            title = 'no'
+
+
 
             path = '/Users/user/Desktop/Backup/'
             full_file_path = await client.download_media(message.media, path)
             filename = full_file_path
             file_id = str(message.id)
             new_file_name = path + file_id
-            # TODO = renaming file
             os.rename(filename, path + file_id)
 
+            id = str(message.id)
 
             if msg_content != '':
                 url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
+                next_url = requests.get(url).url
+                next_url = next_url.split('?')[0]
                 price = str(re.findall(r"\$[^ ]+", msg_content))
                 title = msg_content.split('-')[0]
+
+                parent_dir = '/Users/user/Desktop/Backup/'
+                directory_name = 'Item_'+id
+
+
+                # Path
+                path = os.path.join(parent_dir, directory_name)
+                os.mkdir(path)
+                print("Directory '%s' created" % directory_name)
+
+                ids_obj.append(id)
+
+
+                #put images into folder
+                for item in ids_obj:
+                    Path(parent_dir+item).rename(parent_dir+directory_name+'/'+item+'.png')
+
                 #edit price outpout
                 str(price)
                 price = price.split('\\')[0][2::]
-                #price = price[2::]
+
+                if os.path.exists('/Users/user/Desktop/Backup/products.csv'):
+                    send_msg_to_csv(title, price, url, next_url, id, str(ids_obj), parent_dir+directory_name)
+                else:
+                    create_csv()
+                    send_msg_to_csv(title, price, url, next_url, id, str(ids_obj), parent_dir+directory_name)
+
+                #ids_obj.append(id)
+                #print('\n' + str(ids_obj))
+
+                print('item ' + str(msg_count) + '\t' +
+                      'title:' + title + '\t' +
+                      'price:' + price + '\t' +
+                      'link:' + url + '\t' +
+                      'Saved-> ' + new_file_name + '\t' +
+                      'Message ID:' + id + '\t' +
+                      'Folder IDs:' + str(ids_obj))
+
+                msg_count += 1
+                ids_obj = []
+
+            else:
+                ids_obj.append(id)
 
 
 
-            #path = await client.download_media(message.media, "/Users/user/Desktop/Backup/")
-            print('item ' + str(msg_count) +'\t'+
-                  'Title:' + title + '\t' +
-                  'price:' +str(price) + '\t' +
-                  'link:' + str(url) + '\t' +
-                  'Saved-> ' +new_file_name+ '\t' +
-                  'Message ID:' + str(message.id))  # printed after download is done
-            #full_file_path[11::]+
-            #TODO
-            #logging.info('item ' + str(msg_count) + '\tMessage ID:' + str(message.id)+title + '\t Saved -> ', path[11::])
-            #logging.info('new item')
-            msg_count += 1
+
+
+
         offset_id = messages[len(messages) - 1].id
         total_messages = len(all_messages)
 
-        with open('channel_messages'+str(json_counter)+'.json', 'w') as outfile:
-            json.dump(all_messages, outfile, cls=DateTimeEncoder)
+        #with open('channel_messages'+str(json_counter)+'.json', 'w') as outfile:
+            #json.dump(all_messages, outfile, cls=DateTimeEncoder)
 
-        outfile.close()
+        #outfile.close()
         json_counter += 1
 
 
