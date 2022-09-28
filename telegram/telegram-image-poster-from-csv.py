@@ -28,10 +28,10 @@ csv_path = '/Users/user/Desktop/Backup/products.csv'
 with open(csv_path, 'r') as csvfile:
     datareader = csv.reader(csvfile)
     for row in datareader:
-        product_content = ('\nitem: '+row[0] +
+        product_content = ('******************************************************************************\nitem: '+row[0] +
               '\nprice: '+row[1] +
-              '\nlink: ' + row[2] +
-              '\nae-link: ' + row[3] )
+              '\nlink: ' + row[2] + '-' +
+              '\nae-link: ' + row[3] + '-' )
 
         sleep(3)
         #TODO add functionallty to add photos before
