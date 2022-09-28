@@ -4,11 +4,10 @@ import os
 import os.path
 import re
 import csv
+import logging
 import requests
 from pathlib import Path
-
 from datetime import date, datetime
-import logging
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import (GetHistoryRequest)
@@ -43,13 +42,7 @@ username = config['Telegram']['username']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
-
-
-
-
-
 def send_msg_to_csv(title, price, link, nexturl, id, images, path):
-
     with open('/Users/user/Desktop/Backup/products.csv', 'a', encoding='UTF8', newline='') as f:
         data = [title, price, link, nexturl, id, images, path]
         writer = csv.writer(f)
@@ -59,19 +52,14 @@ def create_csv():
         header = ['title', 'price', 'link','next url', 'id', 'images', 'path']
         writer = csv.writer(f)
         writer.writerow(header)
-
-
-
-
-
-
-
+def rename_files(parent_dir, directory_name, ids_obj):
+    for item in ids_obj:
+        Path(parent_dir + item).rename(parent_dir + directory_name + '/' + item + '.png')
 async def main(phone):
     #log to file events
     logging.basicConfig(filename="log.txt", format="[%(asctime)s] [%(process)d] [%(levelname)s] [%(message)s]", level=logging.DEBUG)
-
     await client.start()
-    print("##\tClient Created Successfully\t##")
+    logging.debug("##\tClient Created Successfully\t##")
     # Ensure you're authorized
     if await client.is_user_authorized() == False:
         await client.send_code_request(phone)
@@ -80,8 +68,7 @@ async def main(phone):
         except SessionPasswordNeededError:
             await client.sign_in(password=input('Password: '))
 
-    me = await client.get_me()
-
+    #me = await client.get_me()
     user_input_channel = input('enter entity(telegram URL or entity id):')
 
     if user_input_channel.isdigit():
@@ -90,7 +77,6 @@ async def main(phone):
         entity = user_input_channel
 
     my_channel = await client.get_entity(entity)
-
     offset_id = 0
     limit = 100
     all_messages = []
@@ -101,7 +87,7 @@ async def main(phone):
 
     #answer = input('Do you want to pull products? please type yes/no:\n')
     while True:
-        logging.warning('Hello From Root')
+        msg_count = 0
         print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages)
         history = await client(GetHistoryRequest(
             peer=my_channel,
@@ -117,28 +103,22 @@ async def main(phone):
             break
         messages = history.messages
 
-
-        msg_count = 0
         for message in messages:
-            all_messages.append(message.to_dict())
 
             msg_content = 'no'
-            msg_content = str(message.message)
-
-
             url = 'no'
             price = 'no'
             title = 'no'
-
-
-
             path = '/Users/user/Desktop/Backup/'
+
+            msg_content = str(message.message)
+            all_messages.append(message.to_dict())
+
             full_file_path = await client.download_media(message.media, path)
             filename = full_file_path
             file_id = str(message.id)
             new_file_name = path + file_id
             os.rename(filename, path + file_id)
-
             id = str(message.id)
 
             if msg_content != '':
@@ -147,69 +127,49 @@ async def main(phone):
                 next_url = next_url.split('?')[0]
                 price = str(re.findall(r"\$[^ ]+", msg_content))
                 title = msg_content.split('-')[0]
-
                 parent_dir = '/Users/user/Desktop/Backup/'
                 directory_name = 'Item_'+id
-
 
                 # Path
                 path = os.path.join(parent_dir, directory_name)
                 os.mkdir(path)
-                print("Directory '%s' created" % directory_name)
-
+                logging.debug("Directory '%s' created" % directory_name)
                 ids_obj.append(id)
-
-
-                #put images into folder
-                for item in ids_obj:
-                    Path(parent_dir+item).rename(parent_dir+directory_name+'/'+item+'.png')
+                rename_files(parent_dir, directory_name, ids_obj)
 
                 #edit price outpout
                 str(price)
                 price = price.split('\\')[0][2::]
 
                 if os.path.exists('/Users/user/Desktop/Backup/products.csv'):
+                    logging.debug('csv file already created -> Sending data')
                     send_msg_to_csv(title, price, url, next_url, id, str(ids_obj), parent_dir+directory_name)
                 else:
                     create_csv()
+                    logging.debug('Creating new csv file then sending data')
                     send_msg_to_csv(title, price, url, next_url, id, str(ids_obj), parent_dir+directory_name)
 
-                #ids_obj.append(id)
-                #print('\n' + str(ids_obj))
-
-                print('item ' + str(msg_count) + '\t' +
-                      'title:' + title + '\t' +
+                print('title:' + title + '\t' +
                       'price:' + price + '\t' +
                       'link:' + url + '\t' +
-                      'Saved-> ' + new_file_name + '\t' +
                       'Message ID:' + id + '\t' +
+                      'Saved-> ' + new_file_name + '\t' +
                       'Folder IDs:' + str(ids_obj))
-
                 msg_count += 1
                 ids_obj = []
 
             else:
                 ids_obj.append(id)
 
-
-
-
-
-
         offset_id = messages[len(messages) - 1].id
         total_messages = len(all_messages)
-
         #with open('channel_messages'+str(json_counter)+'.json', 'w') as outfile:
             #json.dump(all_messages, outfile, cls=DateTimeEncoder)
-
         #outfile.close()
         json_counter += 1
 
-
-
         if total_count_limit != 0 and total_messages >= total_count_limit:
             break
-
 
 with client:
     client.loop.run_until_complete(main(phone))
