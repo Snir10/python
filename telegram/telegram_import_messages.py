@@ -125,7 +125,9 @@ async def main(phone):
                 url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
                 next_url = requests.get(url).url
                 next_url = next_url.split('?')[0]
+                print(msg_content)
                 price = str(re.findall(r"\$[^ ]+", msg_content))
+                #\$[^\]]+"
                 title = msg_content.split('-')[0]
                 parent_dir = '/Users/user/Desktop/Backup/'
                 directory_name = 'Item_'+id
