@@ -4,6 +4,8 @@ import os
 import os.path
 import re
 import csv
+from aliexpress_api import AliexpressApi, models
+
 import logging
 import requests
 from pathlib import Path
@@ -11,9 +13,7 @@ from datetime import date, datetime
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import (GetHistoryRequest)
-from telethon.tl.types import (
-    PeerChannel
-)
+
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -25,7 +25,6 @@ class DateTimeEncoder(json.JSONEncoder):
             return list(o)
 
         return json.JSONEncoder.default(self, o)
-
 
 # Reading Configs
 config = configparser.ConfigParser()
@@ -42,19 +41,22 @@ username = config['Telegram']['username']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
-def send_msg_to_csv(title, price, link, nexturl, id, images, path):
+def send_msg_to_csv(title, price, link, nexturl,affiliate_link, id, images, path):
     with open('/Users/user/Desktop/Backup/products.csv', 'a', encoding='UTF8', newline='') as f:
-        data = [title, price, link, nexturl, id, images, path]
+        data = [title, price, link, nexturl,affiliate_link, id, images, path]
         writer = csv.writer(f)
         writer.writerow(data)
 def create_csv():
     with open('/Users/user/Desktop/Backup/products.csv', 'x', encoding='UTF8', newline='') as f:
-        header = ['title', 'price', 'link','next url', 'id', 'images', 'path']
+        header = ['title', 'price', 'link','next url','affiliate_link',  'id', 'images', 'path']
         writer = csv.writer(f)
         writer.writerow(header)
 def rename_files(parent_dir, directory_name, ids_obj):
     for item in ids_obj:
         Path(parent_dir + item).rename(parent_dir + directory_name + '/' + item + '.png')
+
+
+
 async def main(phone):
     #log to file events
     logging.basicConfig(filename="log.txt", format="[%(asctime)s] [%(process)d] [%(levelname)s] [%(message)s]", level=logging.DEBUG)
@@ -69,12 +71,14 @@ async def main(phone):
             await client.sign_in(password=input('Password: '))
 
     #me = await client.get_me()
-    user_input_channel = input('enter entity(telegram URL or entity id):')
+    # user_input_channel = input('enter entity(telegram URL or entity id):')
+    # #https://t.me/hypeallie
+    # if user_input_channel.isdigit():
+    #     entity = PeerChannel(int(user_input_channel))
+    # else:
+    #     entity = user_input_channel
 
-    if user_input_channel.isdigit():
-        entity = PeerChannel(int(user_input_channel))
-    else:
-        entity = user_input_channel
+    entity = 'https://t.me/hypeallie'
 
     my_channel = await client.get_entity(entity)
     offset_id = 0
@@ -111,6 +115,9 @@ async def main(phone):
             title = 'no'
             path = '/Users/user/Desktop/Backup/'
 
+            aliexpress = AliexpressApi('34061046', '3766ae9cf22b81c88134fb56f71eb03c', models.Language.EN,
+                                       models.Currency.EUR, 'sn2019')
+
             msg_content = str(message.message)
             all_messages.append(message.to_dict())
 
@@ -125,16 +132,27 @@ async def main(phone):
                 url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
                 next_url = requests.get(url).url
                 next_url = next_url.split('?')[0]
+                print(next_url)
+                if next_url.startswith('https://he.aliexpress.com/item/'):
+                    affiliate_link = aliexpress.get_affiliate_links(next_url)
+                    print(affiliate_link)
+                    list_string = str(affiliate_link)
+                    if list_string.split('/')[2] == 's.click.aliexpress.com':
+                        affiliate_link = affiliate_link[0].promotion_link
+                    else:
+                        affiliate_link = 'no link recivied'
+
+
                 print(msg_content)
-                price = str(re.findall(r"\$[^ ]+", msg_content))
-                #\$[^\]]+"
+                #price = str(re.findall(r"\$[^ ]+", msg_content))
+                price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
                 title = msg_content.split('-')[0]
                 parent_dir = '/Users/user/Desktop/Backup/'
                 directory_name = 'Item_'+id
 
                 # Path
                 path = os.path.join(parent_dir, directory_name)
-                os.mkdir(path)
+                os.mkdir(path,)
                 logging.debug("Directory '%s' created" % directory_name)
                 ids_obj.append(id)
                 rename_files(parent_dir, directory_name, ids_obj)
@@ -145,11 +163,11 @@ async def main(phone):
 
                 if os.path.exists('/Users/user/Desktop/Backup/products.csv'):
                     logging.debug('csv file already created -> Sending data')
-                    send_msg_to_csv(title, price, url, next_url, id, str(ids_obj), parent_dir+directory_name)
+                    send_msg_to_csv(title, price, url, next_url,affiliate_link, id, str(ids_obj), parent_dir+directory_name)
                 else:
                     create_csv()
                     logging.debug('Creating new csv file then sending data')
-                    send_msg_to_csv(title, price, url, next_url, id, str(ids_obj), parent_dir+directory_name)
+                    send_msg_to_csv(title, price, url, next_url,affiliate_link, id, str(ids_obj), parent_dir+directory_name)
 
                 print('title:' + title + '\t' +
                       'price:' + price + '\t' +
