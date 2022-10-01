@@ -1,4 +1,5 @@
 import configparser
+import errno
 import json
 import os
 import os.path
@@ -105,10 +106,11 @@ async def main(phone):
         for message in messages:
 
 
-            msg_content = 'no'
             url = 'no'
             price = 'no'
+            msg_content = 'no'
             title = 'no'
+
             path = '/Users/user/Desktop/Backup/'
 
             aliexpress = AliexpressApi('34061046', '3766ae9cf22b81c88134fb56f71eb03c', models.Language.EN,
@@ -117,18 +119,19 @@ async def main(phone):
             msg_content = str(message.message)
             all_messages.append(message.to_dict())
 
-            full_file_path = await client.download_media(message.media, path)
-            filename = full_file_path
+            full_file_name = await client.download_media(message.media, path)
             file_id = str(message.id)
             new_file_name = path + file_id
-            os.rename(filename, path + file_id)
+            os.rename(full_file_name, path + file_id)
             id = str(message.id)
 
-            with open('last_id' 'a') as last_id:
-                if id == last_id.read():
-                    print('id:' + id + '\t equals to last id' + last_id)
-                    break
-
+            with open('last_id.txt', 'r') as last_id:
+                try:
+                    if id == last_id.read():
+                        print('id:' + id + '\t equals to last id' + last_id)
+                        break
+                except:
+                    print('no such id exists:\t'+id)
             if msg_content != '':
                 if first_id == 'first':
                     with open('last_id.txt', 'w') as last_id:
@@ -139,7 +142,6 @@ async def main(phone):
                 url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
                 next_url = requests.get(url).url
                 next_url = next_url.split('?')[0]
-                print(next_url)
                 if next_url.startswith('https://he.aliexpress.com/item/'):
                     affiliate_link = aliexpress.get_affiliate_links(next_url)
                     print(affiliate_link)
@@ -159,7 +161,12 @@ async def main(phone):
 
                 # Path
                 path = os.path.join(parent_dir, directory_name)
-                os.mkdir(path,)
+                try:
+                    os.mkdir(path)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        pass
+
                 logging.debug("Directory '%s' created" % directory_name)
                 ids_obj.append(id)
 
