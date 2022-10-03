@@ -68,23 +68,24 @@ def send_media_group(chat_id, images, folder_path, caption='new message', reply_
                     # a list of InputMediaPhoto. attach refers to the name of the file in the files dict
                     media.append(dict(type='photo', media=f'attach://{name}'))
                 except:
-                    print('can not open --->' + img + 'in ' + folder_path )
+                    print('ERROR: can not open -->' + img + 'in ' + folder_path)
         media[0]['caption'] = caption
         x = requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media), 'reply_to_message_id': reply_to_message_id }, files=files)
         return x
 
 def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, title, price, link ):
+    time = datetime.now()
+
     # print statuses to logger
     if resp.status_code == 200:
         SUCCESS_RATE += 1
-        time = datetime.now()
         print(str(time)+'\tItems:' + str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +'\t' + 'SUCCESS' + '\t'+'\t'+
               title + '\t' +
               price + '\t' +
               link + '\t')
     else:
         ERROR_RATE += 1
-        print(title + '\t' +
+        print(str(time)+'\t'+title + '\t' +
               price + '\t' +
               link + '\t'+
               'Uploading ISSUE -> ' +
@@ -93,7 +94,6 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, title, price, link ):
     return SUCCESS_RATE, ERROR_RATE
 
 
-#TOKEN = '5536338381:AAGn8sPu__OmyDW3RLusbDc8BYTP0ybh7tg'
 bot_id = '5536338381:AAGn8sPu__OmyDW3RLusbDc8BYTP0ybh7tg'
 SEND_MEDIA_GROUP = f'https://api.telegram.org/bot{bot_id}/sendMediaGroup'
 chat_id = '-1001677673014'
@@ -131,7 +131,7 @@ for i in range(len(details)):
     z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, title, price, link)
     SUCCESS_RATE = z[0]
     ERROR_RATE = z[1]
-    sleep(22)
+    sleep(25)
 
 
 
