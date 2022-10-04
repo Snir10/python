@@ -35,10 +35,12 @@ config.read("config.ini")
 api_id = config['Telegram']['api_id']
 api_hash = config['Telegram']['api_hash']
 
-api_hash = str(api_hash)
+#api_hash = str(api_hash)
 
 phone = config['Telegram']['phone']
 username = config['Telegram']['username']
+
+
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
@@ -52,17 +54,35 @@ def create_csv():
         header = ['title', 'price', 'link','next url','affiliate_link',  'id', 'images', 'path']
         writer = csv.writer(f)
         writer.writerow(header)
-def rename_files(parent_dir, directory_name, ids_obj):
+def rename_and_move_files(parent_dir, directory_name, ids_obj):
     for item in ids_obj:
         Path(parent_dir + item).rename(parent_dir + directory_name + '/' + item + '.png')
 
 
+def get_message_details(msg_content):
+    price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
+    title = msg_content.split('-')[0]
+    price = price.split('\\')[0][2::]
+
+    url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
+    next_url = requests.get(url).url.split('?')[0]
+    if next_url.startswith('https://he.aliexpress.com/item/'):
+        aliexpress = AliexpressApi('34061046', '3766ae9cf22b81c88134fb56f71eb03c', models.Language.EN,
+                                   models.Currency.EUR, 'sn2019')
+        affiliate_link = aliexpress.get_affiliate_links(next_url)
+        list_string = str(affiliate_link)
+        if list_string.split('/')[2] == 's.click.aliexpress.com':
+            affiliate_link = affiliate_link[0].promotion_link
+        else:
+            affiliate_link = 'no link received'
+    else:
+        affiliate_link = 'no link received'
+
+    return [title, price, url, next_url, affiliate_link]
+
 
 async def main(phone):
-    #log to file events
-    logging.basicConfig(filename="log.txt", format="[%(asctime)s] [%(process)d] [%(levelname)s] [%(message)s]", level=logging.ERROR)
     await client.start()
-    logging.error("##\tClient Created Successfully\t##")
     # Ensure you're authorized
     if await client.is_user_authorized() == False:
         await client.send_code_request(phone)
@@ -83,11 +103,12 @@ async def main(phone):
     json_counter = 0
     ids_obj = []
 
-    first_id = 'first'
+    first_id = 0
+    first_id_flag = False
 
-    #answer = input('Do you want to pull products? please type yes/no:\n')
+    msg_count = 0
+
     while True:
-                msg_count = 0
                 print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages)
                 history = await client(GetHistoryRequest(
                     peer=my_channel,
@@ -104,68 +125,34 @@ async def main(phone):
                 messages = history.messages
 
                 for message in messages:
-                    # if config.get('Params', 'last_id') == message.id:
-                    #set new value
-                    #print('breaking code see line 110 last message id')
-                    #     break
-                    # else:
 
-                    url = 'no'
-                    price = 'no'
-                    msg_content = 'no'
-                    title = 'no'
 
                     path = '/Users/user/Desktop/Backup/'
-
-                    aliexpress = AliexpressApi('34061046', '3766ae9cf22b81c88134fb56f71eb03c', models.Language.EN,models.Currency.EUR, 'sn2019')
+                    id = str(message.id)
                     msg_content = str(message.message)
+                    new_file_name = path + id
+
+
                     all_messages.append(message.to_dict())
 
                     full_file_name = await client.download_media(message.media, path)
-                    file_id = str(message.id)
-                    new_file_name = path + file_id
-                    os.rename(full_file_name, path + file_id)
-                    id = str(message.id)
 
-                    #TODO
-                    # with open('last_id.txt', 'r') as last_id:
-                    #     j = last_id.readline(0)
-                    # if id == j:
-                    #     print('id:' + id + '\t equals to last id' + last_id)
-                    # with open('last_id.txt', 'r') as last_id:
-                    #     try:
-                    #         pass
-                    #     except:
-                    #         print('no such id exists:\t'+id)
+                    os.rename(full_file_name, path + id)
+
 
                     if msg_content != '':
-                        if first_id == 'first':
-                            with open('last_id.txt', 'w') as last_id:
-                                last_id.write(id)
 
-                        first_id = 'second'
+                        details = get_message_details(msg_content)
 
-                        url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
-                        next_url = requests.get(url).url
-                        next_url = next_url.split('?')[0]
-                        if next_url.startswith('https://he.aliexpress.com/item/'):
-                            affiliate_link = aliexpress.get_affiliate_links(next_url)
-                            #print(affiliate_link)
-                            list_string = str(affiliate_link)
-                            if list_string.split('/')[2] == 's.click.aliexpress.com':
-                                affiliate_link = affiliate_link[0].promotion_link
-                            else:
-                                affiliate_link = 'no link recivied'
+                        title = details[0]
+                        price = details[1]
+                        url = details[2]
+                        next_url = details[3]
+                        affiliate_link = details[4]
 
-
-                        #print(msg_content)
-                        #price = str(re.findall(r"\$[^ ]+", msg_content))
-                        price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
-                        title = msg_content.split('-')[0]
                         parent_dir = '/Users/user/Desktop/Backup/'
                         directory_name = 'Item_'+id
 
-                        # Path
                         path = os.path.join(parent_dir, directory_name)
                         try:
                             os.mkdir(path)
@@ -174,21 +161,16 @@ async def main(phone):
                             if e.errno != errno.EEXIST:
                                 pass
 
-                        logging.error("Directory '%s' created" % directory_name)
                         ids_obj.append(id)
 
-                        rename_files(parent_dir, directory_name, ids_obj)
+                        rename_and_move_files(parent_dir, directory_name, ids_obj)
 
-                        #edit price outpout
-                        str(price)
-                        price = price.split('\\')[0][2::]
+
 
                         if os.path.exists('/Users/user/Desktop/Backup/products.csv'):
-                            logging.error('csv file already created -> Sending data')
                             send_msg_to_csv(title, price, url, next_url,affiliate_link, id, str(ids_obj), parent_dir+directory_name)
                         else:
                             create_csv()
-                            logging.error('Creating new csv file then sending data')
                             send_msg_to_csv(title, price, url, next_url,affiliate_link, id, str(ids_obj), parent_dir+directory_name)
 
                         print(str(datetime.now()) + '\t' +
@@ -204,13 +186,6 @@ async def main(phone):
 
                     else:
                         ids_obj.append(id)
-                        # with open('last_id.txt', 'r') as f:
-                        #     if f.readline(0) == message.id:
-                        #         exit(0)
-                        #     else:
-                        #         with open('last_id.txt', 'a') as f:
-                        #             f.write(message.id)
-
                         offset_id = messages[len(messages) - 1].id
                         total_messages = len(all_messages)
 
