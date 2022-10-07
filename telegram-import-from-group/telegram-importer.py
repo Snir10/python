@@ -35,34 +35,30 @@ config.read("config.ini")
 api_id = config['Telegram']['api_id']
 api_hash = config['Telegram']['api_hash']
 
-#api_hash = str(api_hash)
-
 phone = config['Telegram']['phone']
 username = config['Telegram']['username']
 
-
-
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
-def send_msg_to_csv(title, price, link, nexturl,affiliate_link, id, images, path):
-    with open('/Users/user/Desktop/Backup/products.csv', 'a', encoding='UTF8', newline='') as f:
-        data = [title, price, link, nexturl,affiliate_link, id, images, path]
+def send_msg_to_csv(message_time, csv_f_name, title, price, link, nexturl,affiliate_link, id, images, path):
+    with open('/Users/user/Desktop/Backup/'+csv_f_name, 'a', encoding='UTF8', newline='') as f:
+        data = [message_time, title, price, link, nexturl,affiliate_link, id, images, path]
         writer = csv.writer(f)
         writer.writerow(data)
-def create_csv():
-    with open('/Users/user/Desktop/Backup/products.csv', 'x', encoding='UTF8', newline='') as f:
-        header = ['title', 'price', 'link','next url','affiliate_link',  'id', 'images', 'path']
+def create_csv(name):
+    with open('/Users/user/Desktop/Backup/'+name, 'x', encoding='UTF8', newline='') as f:
+        header = ['time', 'title', 'price', 'link','next url','affiliate_link',  'id', 'images', 'path']
         writer = csv.writer(f)
         writer.writerow(header)
 def rename_and_move_files(parent_dir, directory_name, ids_obj):
     for item in ids_obj:
         Path(parent_dir + item).rename(parent_dir + directory_name + '/' + item + '.png')
-
-
-def get_message_details(msg_content):
+def get_message_details(msg_content, vl_no_link_count):
     price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
     title = msg_content.split('-')[0]
     price = price.split('\\')[0][2::]
+    price = price.replace('$', '')
+    price = price+'$'
 
     url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
     next_url = requests.get(url).url.split('?')[0]
@@ -75,10 +71,45 @@ def get_message_details(msg_content):
             affiliate_link = affiliate_link[0].promotion_link
         else:
             affiliate_link = 'no link received'
+            vl_no_link_count +=1
     else:
-        affiliate_link = 'no link received'
+        affiliate_link = 'no link received #'
+        vl_no_link_count +=1
 
-    return [title, price, url, next_url, affiliate_link]
+    return [title, price, url, next_url, affiliate_link, vl_no_link_count]
+def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj,img_count):
+    print(str(datetime.now()) + '\t' +
+          'ID:' + id + '\t' +
+          'title:' + title + '\t' +
+          'price:' + price + '\t' +
+          'link:' + url + '\t' +
+          'aff_link:' + affiliate_link + '\t' +
+          'Saved-> ' + new_file_name + '\t' +
+          'Images files:' + str(ids_obj)+ '\t' +
+          'img count: '+str(img_count))
+
+
+def validate_black_list(string):
+    if string.__contains__('https://hypeallie.online/jackzhang/'):
+        return True
+
+
+def validate_last_id(id, first_id):
+    with open('/Users/user/Desktop/Backup/' + 'last_id.txt', "a+") as f:
+        f.seek(0)
+        last_id =f.readline()
+        if last_id == id:
+            print('arrived to last id recorded\n exiting program ID: ' + id)
+            f.close()
+            exit(0)
+
+        if first_id == True:
+            print('id == 0 saving current first id: ' + id)
+            f.truncate(0)
+            f.write(id)
+            first_id = False
+        f.close()
+    return first_id
 
 
 async def main(phone):
@@ -103,13 +134,14 @@ async def main(phone):
     json_counter = 0
     ids_obj = []
 
-    first_id = 0
-    first_id_flag = False
+    first_id = True
 
     msg_count = 0
+    img_counter = 0
+    no_link_recived_cnt = 0
 
     while True:
-                print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages)
+                print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages,"; msg_counter:", msg_count,"; No link counter:", no_link_recived_cnt )
                 history = await client(GetHistoryRequest(
                     peer=my_channel,
                     offset_id=offset_id,
@@ -126,29 +158,44 @@ async def main(phone):
 
                 for message in messages:
 
-
                     path = '/Users/user/Desktop/Backup/'
                     id = str(message.id)
                     msg_content = str(message.message)
+
+
                     new_file_name = path + id
 
+                    first_id = validate_last_id(id, first_id)
 
                     all_messages.append(message.to_dict())
 
                     full_file_name = await client.download_media(message.media, path)
 
+                    message.message
+
                     os.rename(full_file_name, path + id)
+
+                    img_counter +=1
 
 
                     if msg_content != '':
+                        message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
 
-                        details = get_message_details(msg_content)
+                        details = get_message_details(msg_content, no_link_recived_cnt)
 
                         title = details[0]
                         price = details[1]
                         url = details[2]
                         next_url = details[3]
                         affiliate_link = details[4]
+                        no_link_recived_cnt = details[5]
+
+
+
+
+                        # if validate_black_list(title):
+                        #     continue
+
 
                         parent_dir = '/Users/user/Desktop/Backup/'
                         directory_name = 'Item_'+id
@@ -165,22 +212,28 @@ async def main(phone):
 
                         rename_and_move_files(parent_dir, directory_name, ids_obj)
 
+                        if affiliate_link.startswith('no'):
+                            f_name = 'no_link_products.csv'
+                            if os.path.exists('/Users/user/Desktop/Backup/'+f_name):
+                                send_msg_to_csv(message_time, f_name, title, price, url, next_url, affiliate_link, id, str(ids_obj),
+                                                parent_dir + directory_name)
+                            else:
+                                create_csv(f_name)
+                                send_msg_to_csv(message_time, f_name, title, price, url, next_url, affiliate_link, id, str(ids_obj),
+                                                parent_dir + directory_name)
 
-
-                        if os.path.exists('/Users/user/Desktop/Backup/products.csv'):
-                            send_msg_to_csv(title, price, url, next_url,affiliate_link, id, str(ids_obj), parent_dir+directory_name)
                         else:
-                            create_csv()
-                            send_msg_to_csv(title, price, url, next_url,affiliate_link, id, str(ids_obj), parent_dir+directory_name)
+                            f_name = 'products.csv'
+                            if os.path.exists('/Users/user/Desktop/Backup/'+f_name):
+                                send_msg_to_csv(message_time, f_name, title, price, url, next_url,affiliate_link, id, str(ids_obj), parent_dir+directory_name)
+                            else:
+                                create_csv(f_name)
+                                send_msg_to_csv(message_time, f_name, title, price, url, next_url,affiliate_link, id, str(ids_obj), parent_dir+directory_name)
 
-                        print(str(datetime.now()) + '\t' +
-                              'ID:' + id + '\t' +
-                              'title:' + title + '\t' +
-                              'price:' + price + '\t' +
-                              'link:' + url + '\t' +
-                              'aff_link:' + affiliate_link + '\t' +
-                              'Saved-> ' + new_file_name + '\t' +
-                              'Folder IDs:' + str(ids_obj))
+                        print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
+
+
+                        img_counter = 0
                         msg_count += 1
                         ids_obj = []
 
