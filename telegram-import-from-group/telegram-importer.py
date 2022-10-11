@@ -169,7 +169,6 @@ def logger_init():
     logger.addHandler(fh)
 
     return logger
-
 async def main(phone):
 
     await client.start()
@@ -298,11 +297,6 @@ async def main(phone):
 
                 if total_count_limit != 0 and total_messages >= total_count_limit:
                     break
-
-
-
-
-
 with client:
     logger = logger_init()
     client.loop.run_until_complete(main(phone))

@@ -74,7 +74,7 @@ def send_media_group(chat_id, images, folder_path, caption='new message', reply_
                     logger.warning(f'ERROR: can not open --> {img} \t in {folder_path}')
         media[0]['caption'] = caption
 
-        resp = requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media), 'reply_to_message_id': reply_to_message_id}, files=files)
+        resp = requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media), 'reply_to_message_id': reply_to_message_id}, files=files, verify=False)
         return resp
 def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link):
 
@@ -219,24 +219,12 @@ def print_welcome_csv_uploader(csv_path, len):
 
     print('##########################################################################################\n')
 def logger_init():
-    # logger = logging.getLogger('my_module_name')
-    # logger.setLevel(level=logging.INFO)
-    # fh = logging.StreamHandler(sys.stdout)
-    # fh_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
-    # fh.setFormatter(fh_formatter)
-    # logger.addHandler(fh)
-    #
-    # fh = logging.FileHandler('uploader.log')
-    # fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
-    # fh.setLevel(logging.DEBUG)
-    # logger.addHandler(fh)
-
-    logger = logging.getLogger('my_module_name')
-    logger.setLevel(level=logging.INFO)
-    LOGFORMAT = "%(log_color)s %(asctime)s %(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
+    log = logging.getLogger('my_module_name')
+    log.setLevel(level=logging.INFO)
+    LOG_FORMAT = "%(log_color)s %(asctime)s %(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
 
     fh = logging.StreamHandler()
-    formatter = ColoredFormatter(LOGFORMAT)
+    formatter = ColoredFormatter(LOG_FORMAT)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
