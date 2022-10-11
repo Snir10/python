@@ -5,9 +5,9 @@ import sqlite3
 root = Tk()
 root.title('Snir\'s SQL APP')
 root.minsize(600, 600)
-root.maxsize(600, 600)
+root.maxsize(800, 800)
 # root.iconbitmap('c:/X/X')
-root.geometry("600x600")
+root.geometry("800x800")
 
 
 #comment/uncomment selected DB

@@ -1,5 +1,5 @@
 import csv
-
+from time import sleep
 from aliexpress_api import AliexpressApi, models
 
 
@@ -14,16 +14,21 @@ with open("/Users/user/Desktop/Backup/products.csv", 'r') as file:
 
   for row in csvreader:
     link = row[4]
-    print('aliexpress src link'+link + 'is going to be converted')
+    print('aliexpress src link\t'+link + '\tis going to be converted')
 
     affiliate_links = aliexpress.get_affiliate_links(link)
+    sleep(1)
     try:
         print(affiliate_links[0].promotion_link)
+
     except:
         print('no aff link detected')
 
-#products = aliexpress.get_products_details(['1000006468625', 'https://aliexpress.com/item/1005003091506814.html'])
-#print(products[0].product_title, products[1].target_sale_price)
+
+# aliexpress.get_products_details()
+
+products = aliexpress.get_products_details(['1000006468625', 'https://aliexpress.com/item/1005003091506814.html'])
+print(products[0].product_title, products[1].target_sale_price)
 
 
 

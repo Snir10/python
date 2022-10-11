@@ -7,7 +7,7 @@ root.title('Snir\'s SQL APP')
 root.geometry("400x600")
 
 #Databases
-conn = sqlite3.connect('address_book.db')
+conn = sqlite3.connect('../old_py/address_book.db')
 #conn = sqlite3.connect('address_book1.db')
 
 # Create cursor instanse
@@ -33,7 +33,7 @@ c = conn.cursor()
 
 def query():
     #create a DB or connect to one.
-    conn = sqlite3.connect('address_book.db')
+    conn = sqlite3.connect('../old_py/address_book.db')
 
     # Create cursor instanse
     c = conn.cursor()
@@ -57,7 +57,7 @@ def query():
 
 def delete():
     #create a DB or connect to one.
-    conn = sqlite3.connect('address_book.db')
+    conn = sqlite3.connect('../old_py/address_book.db')
 
     # Create cursor instanse
     c = conn.cursor()
@@ -74,7 +74,7 @@ def delete():
 
 def submit():
     #create a DB or connect to one.
-    conn = sqlite3.connect('address_book.db')
+    conn = sqlite3.connect('../old_py/address_book.db')
 
     # Create cursor instanse
     c = conn.cursor()
@@ -109,7 +109,7 @@ def edit():
     editor.geometry("400x200")
 
     # Databases
-    conn = sqlite3.connect('address_book.db')
+    conn = sqlite3.connect('../old_py/address_book.db')
 
     # Create cursor instanse
     c = conn.cursor()
@@ -173,7 +173,7 @@ def edit():
 def update():
 
     # Databases
-    conn = sqlite3.connect('address_book.db')
+    conn = sqlite3.connect('../old_py/address_book.db')
     # Create cursor instanse
     c = conn.cursor()
 

@@ -18,7 +18,7 @@ right_frame.grid(row=0, column=1, padx=10, pady=5)
 Label(left_frame, text="Original Image").grid(row=0, column=0, padx=5, pady=5)
 
 # load image to be "edited"
-image = PhotoImage(file="giphy.gif")
+image = PhotoImage(file="../Self/giphy.gif")
 original_image = image.subsample(3 ,3) # resize image using subsample
 Label(left_frame, image=original_image).grid(row=1, column=0, padx=5, pady=5)
 

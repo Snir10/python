@@ -1,6 +1,6 @@
 
 from tkinter import *
-import numpy as np
+from old_py import numpy as np
 import matplotlib.pyplot as plt
 
 

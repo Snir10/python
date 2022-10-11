@@ -46,6 +46,12 @@ my_img3 = ImageTk.PhotoImage(Image.open("C:/pics/Car3.png"))
 my_img4 = ImageTk.PhotoImage(Image.open("C:/pics/Car4.jpg"))
 my_img5 = ImageTk.PhotoImage(Image.open("C:/pics/Car5.jpg"))
 
+# my_img1 = ImageTk.PhotoImage(Image.open("C:/pics/Car1.png"))
+# my_img2 = ImageTk.PhotoImage(Image.open("C:/pics/Car2.png"))
+# my_img3 = ImageTk.PhotoImage(Image.open("C:/pics/Car3.png"))
+# my_img4 = ImageTk.PhotoImage(Image.open("C:/pics/Car4.jpg"))
+# my_img5 = ImageTk.PhotoImage(Image.open("C:/pics/Car5.jpg"))
+
 image_list = [my_img1, my_img2, my_img3, my_img4, my_img5]
 
 
