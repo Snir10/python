@@ -5,16 +5,12 @@ import os
 import os.path
 import re
 import csv
-import sys
 from time import sleep
-
 from aliexpress_api import AliexpressApi, models
-
 import logging
 import requests
 from pathlib import Path
 from datetime import date, datetime
-
 from colorlog import ColoredFormatter
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
@@ -65,8 +61,17 @@ def get_message_details(msg_content, vl_no_link_count):
     price = price.replace('$', '')
     price = price+'$'
 
-    url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
-    next_url = requests.get(url).url.split('?')[0]
+    try:
+        url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
+        next_url = requests.get(url).url.split('?')[0]
+    except:
+        next_url = 'no valid url'
+        url = 'no valid url'
+
+        logger.error("no valid url")
+
+
+
     if next_url.startswith('https://he.aliexpress.com/item/'):
         aliexpress = AliexpressApi('34061046',
                                    '3766ae9cf22b81c88134fb56f71eb03c',
@@ -114,8 +119,6 @@ def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, 
         logger.info(x)
     else:
         logger.error(x)
-
-
 def validate_black_list(string):
     if string.__contains__('https://hypeallie.online/jackzhang/'):
         return True
@@ -145,9 +148,10 @@ def print_welcome_csv_importer(f_name):
     print('###############\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t##############')
     print(f'##########################################################################################')
 def validate_last_id(id, conf_id):
-
-    # conf_id = config['Telegram']['importer_last_id']
     if conf_id == id:
+        logging.info(f'### arrived to dest ID: {id} ###')
+        logging.info(f'### SUCCESSFULLY DONE {id} ###')
+        logging.info(f'###  {id} ###')
         logging.info(f'### arrived to dest ID: {id} ###')
 
         sleep(20)
@@ -201,6 +205,7 @@ async def main(phone):
     handle_fd = config['Telegram']['handle_fd']
     f_name = config['Telegram']['f_name']
     parent_dir = config['Telegram']['parent_dir']
+    #parent_dir = parent_dir +'_'+str(datetime.now().strftime("%b %d, %H:%M:%S")+'/')
 
 
 
@@ -240,7 +245,13 @@ async def main(phone):
             new_file_name = parent_dir + id
 
             all_messages.append(message.to_dict())
-            os.rename(full_file_name, handle_fd + id)
+            #here we got none type instead string
+            #logger.info(f'full_file_name :{full_file_name} handle_fd :{handle_fd} id :{id}')
+            try:
+                os.rename(full_file_name, handle_fd + id)
+            except:
+                logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
+
             img_counter += 1
 
 
