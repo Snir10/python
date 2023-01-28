@@ -210,7 +210,7 @@ async def main(phone):
     path = os.path.join(parent_dir, str(datetime.now().strftime('%m-%d')+'/'))
 
 #configured day
-    path = os.path.join(parent_dir, '01-22' + '/')
+    path = os.path.join(parent_dir, 'tests' + '/')
 
     os.mkdir(path)
 
@@ -294,17 +294,17 @@ async def main(phone):
 
                 # validate_last_id(id, conf_id)
 
-                msgDay = message.date
-                print(str(message.id) + '\t' + str(msgDay) + '\t' + str(msgDay.strftime('%d')))
-
-                # need no message update in this loop
-                if int(msgDay.strftime('%d')) > 22:
-                    #sleep(1)
-
-                    continue
-
-                if int(msgDay.strftime('%d')) == 21:
-                    exit(0)
+                # msgDay = message.date
+                # print(str(message.id) + '\t' + str(msgDay) + '\t' + str(msgDay.strftime('%d')))
+                #
+                # # need no message update in this loop
+                # if int(msgDay.strftime('%d')) > 22:
+                #     #sleep(1)
+                #
+                #     continue
+                #
+                # if int(msgDay.strftime('%d')) == 21:
+                #     exit(0)
 
 
                 #TODO - if blacklist
