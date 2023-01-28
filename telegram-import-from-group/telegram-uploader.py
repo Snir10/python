@@ -15,7 +15,9 @@ import configparser
 import logging
 import random
 
-'''upload all product not in use anymore'''
+'''upload all product 
+
+THIS method not in use anymore since we managed in the first lines of code'''
 def upload_all_products(details):
     SUCCESS_RATE = 0
     ERROR_RATE = 0
@@ -50,8 +52,9 @@ def upload_all_products(details):
 
             price = str(price)+dollar
             # caption text to send
-            text = title[:20] + '\n\n' +\
-                   price + '\n\n\t👇🏻\t\t\tBuy it now\t\t\t👇🏻\t\t\n' +\
+            text = '🛍️ ' + title[:20] + '\n\n' +\
+                   price + '\n\n\t👇🏻\t\t\tBuy it now\t\t\t👇🏻\t\t\n' + \
+                   '\n\n\t👇🏻\t\t\tPlease Choose According to the Options in Product Page\t\t\t👇🏻\t\t\n' + \
                    link + '\n' +\
                    str(SUCCESS_RATE)+'/'+str(SUCCESS_RATE + ERROR_RATE)
 

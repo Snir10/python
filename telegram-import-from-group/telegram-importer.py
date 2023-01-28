@@ -205,7 +205,19 @@ async def main(phone):
     handle_fd = config['Telegram']['handle_fd']
     f_name = config['Telegram']['f_name']
     parent_dir = config['Telegram']['parent_dir']
-    #parent_dir = parent_dir +'_'+str(datetime.now().strftime("%b %d, %H:%M:%S")+'/')
+
+#real day
+    path = os.path.join(parent_dir, str(datetime.now().strftime('%m-%d')+'/'))
+
+#configured day
+    path = os.path.join(parent_dir, '01-22' + '/')
+
+    os.mkdir(path)
+
+    parent_dir = path
+    #os.mkdir(parent_dir, str(datetime.now().strftime('%m/%d')+'/'))
+
+    #parent_dir = path
 
 
 
@@ -234,18 +246,41 @@ async def main(phone):
 
         for message in messages:
 
-            #TODO - first ID
-            #first_id = validate_last_id(path, id, first_id)
+            #TODO - DAY VALIDATION
 
-            full_file_name = await client.download_media(message.media, parent_dir)
+            # msgDay = message.date
+            # print(str(message.id) + '\t' + str(msgDay) + '\t' + str(msgDay.strftime('%d')))
+            #
+            # # need no message update in this loop
+            # if int(msgDay.strftime('%d')) > 22:
+            #     #sleep(1)
+            #
+            #     continue
+            #
+            # if int(msgDay.strftime('%d')) == 21:
+            #     exit(0)
+
+
+            # today = datetime.today()
+            # c_today = today.strftime('%d')
+            # #c_today = '26'
+            #
+            # msgDate = message.date
+
 
 
             id = str(message.id)
             msg_content = str(message.message)
             new_file_name = parent_dir + id
 
+            full_file_name = await client.download_media(message.media, parent_dir)
+
+
+
             all_messages.append(message.to_dict())
             #here we got none type instead string
+
+
             #logger.info(f'full_file_name :{full_file_name} handle_fd :{handle_fd} id :{id}')
             try:
                 os.rename(full_file_name, handle_fd + id)
@@ -257,7 +292,20 @@ async def main(phone):
 
             if msg_content != '': #it's a content message
 
-                validate_last_id(id, conf_id)
+                # validate_last_id(id, conf_id)
+
+                msgDay = message.date
+                print(str(message.id) + '\t' + str(msgDay) + '\t' + str(msgDay.strftime('%d')))
+
+                # need no message update in this loop
+                if int(msgDay.strftime('%d')) > 22:
+                    #sleep(1)
+
+                    continue
+
+                if int(msgDay.strftime('%d')) == 21:
+                    exit(0)
+
 
                 #TODO - if blacklist
                 # if validate_black_list(title):
