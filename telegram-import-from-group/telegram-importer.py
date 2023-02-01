@@ -16,7 +16,7 @@ from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import (GetHistoryRequest)
 
-
+#for time purposes
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, datetime):
@@ -26,21 +26,6 @@ class DateTimeEncoder(json.JSONEncoder):
             return list(o)
 
         return json.JSONEncoder.default(self, o)
-
-# Reading Configs
-config = configparser.ConfigParser()
-config.read("config_files/importer_config.ini")
-
-# Setting configuration values
-api_id = config['Telegram']['api_id']
-api_hash = config['Telegram']['api_hash']
-
-phone = config['Telegram']['phone']
-username = config['Telegram']['username']
-conf_id = config['Telegram']['importer_last_id']
-
-# Create the client and connect
-client = TelegramClient(username, api_id, api_hash)
 def send_msg_to_csv(message_time, csv_f_name, title, price, link, nexturl, affiliate_link, id, images, parent, dir_name):
     with open(parent+csv_f_name, 'a', encoding='UTF8', newline='') as f:
         data = [message_time, title, price, link, nexturl,affiliate_link, id, images, parent+dir_name]
@@ -53,6 +38,7 @@ def create_csv(path, name):
         writer.writerow(header)
 def rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj):
     for item in ids_obj:
+        item = str(item)
         Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
 def get_message_details(msg_content, vl_no_link_count):
     price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
@@ -78,9 +64,12 @@ def get_message_details(msg_content, vl_no_link_count):
                                    models.Language.EN,
                                    models.Currency.EUR, 'sn2019')
         affiliate_link = aliexpress.get_affiliate_links(next_url)
-        list_string = str(affiliate_link)
-        if list_string.split('/')[2] == 's.click.aliexpress.com':
+        list_string = str(affiliate_link).split('/')[2]
+        if list_string == 's.click.aliexpress.com':
             affiliate_link = affiliate_link[0].promotion_link
+
+        elif list_string.startswith('he.aliexpress.com/item'):
+            affiliate_link = 'actually a product but can\'t be coverted'
         else:
             affiliate_link = 'Failed to convert Ali Express link'
             vl_no_link_count +=1
@@ -108,8 +97,8 @@ def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, 
         f'[ID: {id}]  ' \
         f'Title: {title} \t' +\
         'Price:' + price + '\t' +\
-        'Link:' + url + '\t' +\
-        'Aff_link:' + affiliate_link + '\t' +\
+        'Link:' + url + '\t''\t' +\
+        'Aff_link: ' + affiliate_link + '\t' +\
         'Saved-> ' + new_file_name + '\t' +\
         'Images files:' + str(ids_obj) + '\t' +\
         'img count: '+str(img_count)
@@ -173,6 +162,46 @@ def logger_init():
     logger.addHandler(fh)
 
     return logger
+def saveContent(message, msg_content, ids_obj, no_link_recived_cnt, parent_dir, handle_fd, f_name, new_file_name, img_counter, msg_count):
+
+    id = str(message.id)
+    ids_obj.append(id)
+
+    message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
+    details = get_message_details(msg_content, no_link_recived_cnt)
+
+    title = details[0]
+    price = details[1]
+    url = details[2]
+    next_url = details[3]
+    affiliate_link = details[4]
+    no_link_recived_cnt = details[5]
+
+    directory_name = 'Item_' + str(message.id)
+
+    add_item_images_folder(parent_dir, directory_name)
+
+    try:
+        rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj)
+    except:
+        logger.error('no renaming for some reason')
+
+
+    if os.path.exists(parent_dir + f_name):
+        send_msg_to_csv(message_time, f_name, title, price, url, next_url, affiliate_link, id, str(ids_obj), parent_dir,
+                        directory_name)
+    else:
+        create_csv(parent_dir, f_name)
+        send_msg_to_csv(message_time, f_name, title, price, url, next_url, affiliate_link, id, str(ids_obj), parent_dir,
+                        directory_name)
+
+    print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
+
+    # reinit counters and objects
+    msg_count += 1
+
+
+
 async def main(phone):
 
     await client.start()
@@ -244,110 +273,39 @@ async def main(phone):
             break
         messages = history.messages
 
+        main_folder_id = ''
+
         for message in messages:
 
-            #TODO - DAY VALIDATION
-
-            # msgDay = message.date
-            # print(str(message.id) + '\t' + str(msgDay) + '\t' + str(msgDay.strftime('%d')))
-            #
-            # # need no message update in this loop
-            # if int(msgDay.strftime('%d')) > 22:
-            #     #sleep(1)
-            #
-            #     continue
-            #
-            # if int(msgDay.strftime('%d')) == 21:
-            #     exit(0)
-
-
-            # today = datetime.today()
-            # c_today = today.strftime('%d')
-            # #c_today = '26'
-            #
-            # msgDate = message.date
-
-
-
-            id = str(message.id)
-            msg_content = str(message.message)
-            new_file_name = parent_dir + id
-
-            full_file_name = await client.download_media(message.media, parent_dir)
-
-
-
             all_messages.append(message.to_dict())
-            #here we got none type instead string
+            msg_content = str(message.message)
+            id = str(message.id)
+            full_file_name = await client.download_media(message.media, parent_dir)
+            sleep(2)
 
 
-            #logger.info(f'full_file_name :{full_file_name} handle_fd :{handle_fd} id :{id}')
-            try:
-                os.rename(full_file_name, handle_fd + id)
-            except:
-                logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
-
-            img_counter += 1
-
-
-            if msg_content != '': #it's a content message
-
-                # validate_last_id(id, conf_id)
-
-                # msgDay = message.date
-                # print(str(message.id) + '\t' + str(msgDay) + '\t' + str(msgDay.strftime('%d')))
-                #
-                # # need no message update in this loop
-                # if int(msgDay.strftime('%d')) > 22:
-                #     #sleep(1)
-                #
-                #     continue
-                #
-                # if int(msgDay.strftime('%d')) == 21:
-                #     exit(0)
-
-
-                #TODO - if blacklist
-                # if validate_black_list(title):
-                #     continue
-
-
-                directory_name = 'Item_'+id
-                ids_obj.append(id)
-
-                message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
-                details = get_message_details(msg_content, no_link_recived_cnt)
-
-                title = details[0]
-                price = details[1]
-                url = details[2]
-                next_url = details[3]
-                affiliate_link = details[4]
-                no_link_recived_cnt = details[5]
-
-
-
-                add_item_images_folder(parent_dir, directory_name)
-                rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj)
-
-
-                if os.path.exists(parent_dir + f_name):
-                    send_msg_to_csv(message_time, f_name, title, price, url, next_url, affiliate_link, id, str(ids_obj), parent_dir, directory_name)
-                else:
-                    create_csv(parent_dir, f_name)
-                    send_msg_to_csv(message_time, f_name, title, price, url, next_url, affiliate_link, id, str(ids_obj), parent_dir, directory_name)
-
-                print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
-
-
-
-
-                #reinit counters and objects
-                img_counter = 0
-                msg_count += 1
+            if msg_content != '':
+                main_folder_id = parent_dir + id
                 ids_obj = []
+                img_counter = 0
+                new_file_name = main_folder_id
+
+                try:
+                    os.rename(full_file_name, main_folder_id)
+                except:
+                    logger.info(
+                        f'Could not renaming -> full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
+
+                saveContent(message, msg_content, ids_obj, no_link_recived_cnt, parent_dir, handle_fd, f_name, new_file_name, img_counter, msg_count)
+                msg_count += 1
+                img_counter += 1
 
             else:
+
+                try:
+                    os.rename(full_file_name, main_folder_id)
+                except:
+                    logger.info(f'Could not renaming -> full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
 
 
                 ids_obj.append(id)
@@ -356,6 +314,23 @@ async def main(phone):
 
                 if total_count_limit != 0 and total_messages >= total_count_limit:
                     break
+
+# Reading Configs
+config = configparser.ConfigParser()
+config.read("config_files/importer_config.ini")
+
+# Setting configuration values
+api_id = config['Telegram']['api_id']
+api_hash = config['Telegram']['api_hash']
+
+phone = config['Telegram']['phone']
+username = config['Telegram']['username']
+conf_id = config['Telegram']['importer_last_id']
+
+# Create the client and connect
+client = TelegramClient(username, api_id, api_hash)
+
+
 with client:
     logger = logger_init()
     client.loop.run_until_complete(main(phone))

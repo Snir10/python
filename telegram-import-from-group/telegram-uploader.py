@@ -79,6 +79,9 @@ def upload_all_products(details):
                   'link isnt containing s.click' + '\t'
             logger.warning(x)
 
+
+
+
 def open_csv(csv_path):
     returned_list = []
     with open(csv_path, 'r') as csvfile:
@@ -260,7 +263,9 @@ def manipulate_msg_text_for_upload(list_of_product_details, SUCCESS_RATE, ERROR_
         price = str(price) + dollar
         # caption text to send
         text = title[:20] + '\n\n' + \
-               price + '\n\n\t👇🏻\t\t\tBuy it now\t\t\t👇🏻\t\t\n' + \
+               price + '\n' + \
+               '\nPlease Choose According to Photos ☝🏻☝🏻 \n' + \
+               '\n\n\t👇🏻\t\t\tBuy it now\t\t\t👇🏻\t\t\n' + \
                link + '\n' + \
                str(SUCCESS_RATE) + '/' + str(SUCCESS_RATE + ERROR_RATE)
 
