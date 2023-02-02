@@ -198,17 +198,17 @@ async def main(phone):
     parent_dir = config['Telegram']['parent_dir']
 
 #real day
-    path = os.path.join(parent_dir, str(datetime.now().strftime('%m-%d')+'/'))
+    path = os.path.join(parent_dir)
 
-#configured day
-    path = os.path.join(parent_dir, 'tests' + '/')
+    try:
+        os.mkdir(path)
+    # fix for file already exists
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            pass
 
-    os.mkdir(path)
 
     parent_dir = path
-    #os.mkdir(parent_dir, str(datetime.now().strftime('%m/%d')+'/'))
-
-    #parent_dir = path
 
 
 
