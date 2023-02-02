@@ -41,6 +41,22 @@ conf_id = config['Telegram']['importer_last_id']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
+
+#NOT IN USE
+def validate_last_id(id, conf_id):
+    if conf_id == id:
+        logging.info(f'### arrived to dest ID: {id} ###')
+        logging.info(f'### SUCCESSFULLY DONE {id} ###')
+        logging.info(f'###  {id} ###')
+        logging.info(f'### arrived to dest ID: {id} ###')
+
+        sleep(20)
+        exit(0)
+def validate_black_list(string):
+    if string.__contains__('https://hypeallie.online/jackzhang/'):
+        return True
+
+#CSV FUNCTIONS
 def send_msg_to_csv(message_time, csv_f_name, title, price, link, nexturl, affiliate_link, id, images, parent, dir_name):
     with open(parent+csv_f_name, 'a', encoding='UTF8', newline='') as f:
         data = [message_time, title, price, link, nexturl,affiliate_link, id, images, parent+dir_name]
@@ -51,9 +67,30 @@ def create_csv(path, name):
         header = ['uploaded time', 'title', 'price', 'link','next url','affiliate_link',  'id', 'images', 'path']
         writer = csv.writer(f)
         writer.writerow(header)
+
+#Files HANDALING
 def rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj):
     for item in ids_obj:
         Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
+def add_item_images_folder(parent_dir, directory_name):
+    path = os.path.join(parent_dir, directory_name)
+    try:
+        os.mkdir(path)
+    # fix for file already exists
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            pass
+def create_handling_folder(parent_dir, param):
+    path = os.path.join(parent_dir, param)
+
+    try:
+        os.mkdir(path)
+    # fix for file already exists
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            pass
+
+#GET MSG TEXT
 def get_message_details(msg_content, vl_no_link_count):
     price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
     title = msg_content.split('-')[0]
@@ -84,6 +121,8 @@ def get_message_details(msg_content, vl_no_link_count):
     sleep(2)
 
     return [title, price, url, next_url, affiliate_link, vl_no_link_count]
+
+#LOG HANDALING
 def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count):
 
     title = title.strip()[:18]
@@ -110,26 +149,6 @@ def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, 
         logger.info(x)
     else:
         logger.error(x)
-def validate_black_list(string):
-    if string.__contains__('https://hypeallie.online/jackzhang/'):
-        return True
-def add_item_images_folder(parent_dir, directory_name):
-    path = os.path.join(parent_dir, directory_name)
-    try:
-        os.mkdir(path)
-    # fix for file already exists
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            pass
-def create_handling_folder(parent_dir, param):
-    path = os.path.join(parent_dir, param)
-
-    try:
-        os.mkdir(path)
-    # fix for file already exists
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            pass
 def print_welcome_csv_importer(f_name):
     print('##########################################################################################')
     print('###############\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t##############')
@@ -138,15 +157,6 @@ def print_welcome_csv_importer(f_name):
     print(f'###############\t\twill FINISH importing until -> ID:{conf_id}\t\t\t\t##############')
     print('###############\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t##############')
     print(f'##########################################################################################')
-def validate_last_id(id, conf_id):
-    if conf_id == id:
-        logging.info(f'### arrived to dest ID: {id} ###')
-        logging.info(f'### SUCCESSFULLY DONE {id} ###')
-        logging.info(f'###  {id} ###')
-        logging.info(f'### arrived to dest ID: {id} ###')
-
-        sleep(20)
-        exit(0)
 def logger_init():
     # init logger
     logger = logging.getLogger('my_module_name')
@@ -164,6 +174,9 @@ def logger_init():
     logger.addHandler(fh)
 
     return logger
+
+
+#MAIN FOLDER
 async def main(phone):
 
     await client.start()
@@ -208,7 +221,7 @@ async def main(phone):
             pass
 
 ##
-    parent_dir = path
+    #parent_dir = path
 
 
 
@@ -237,29 +250,6 @@ async def main(phone):
 
         for message in messages:
 
-            #TODO - DAY VALIDATION
-
-            # msgDay = message.date
-            # print(str(message.id) + '\t' + str(msgDay) + '\t' + str(msgDay.strftime('%d')))
-            #
-            # # need no message update in this loop
-            # if int(msgDay.strftime('%d')) > 22:
-            #     #sleep(1)
-            #
-            #     continue
-            #
-            # if int(msgDay.strftime('%d')) == 21:
-            #     exit(0)
-
-
-            # today = datetime.today()
-            # c_today = today.strftime('%d')
-            # #c_today = '26'
-            #
-            # msgDate = message.date
-
-
-
             id = str(message.id)
             msg_content = str(message.message)
             new_file_name = parent_dir + id
@@ -269,10 +259,7 @@ async def main(phone):
 
 
             all_messages.append(message.to_dict())
-            #here we got none type instead string
 
-
-            #logger.info(f'full_file_name :{full_file_name} handle_fd :{handle_fd} id :{id}')
             try:
                 os.rename(full_file_name, handle_fd + id)
             except:
@@ -282,26 +269,6 @@ async def main(phone):
 
 
             if msg_content != '': #it's a content message
-
-                # validate_last_id(id, conf_id)
-
-                # msgDay = message.date
-                # print(str(message.id) + '\t' + str(msgDay) + '\t' + str(msgDay.strftime('%d')))
-                #
-                # # need no message update in this loop
-                # if int(msgDay.strftime('%d')) > 22:
-                #     #sleep(1)
-                #
-                #     continue
-                #
-                # if int(msgDay.strftime('%d')) == 21:
-                #     exit(0)
-
-
-                #TODO - if blacklist
-                # if validate_black_list(title):
-                #     continue
-
 
                 directory_name = 'Item_'+id
                 ids_obj.append(id)
@@ -331,16 +298,12 @@ async def main(phone):
                 print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
 
 
-
-
                 #reinit counters and objects
                 img_counter = 0
                 msg_count += 1
                 ids_obj = []
 
             else:
-
-
                 ids_obj.append(id)
                 offset_id = messages[len(messages) - 1].id
                 total_messages = len(all_messages)
