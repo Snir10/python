@@ -177,7 +177,7 @@ def logger_init():
 
 
 #MAIN FOLDER
-async def main(phone):
+async def main(phone, last_main_msg=None, first_try=True):
 
     await client.start()
     # Ensure you're authorized - was ->    if await client.is_user_authorized() == False: !!!
@@ -207,7 +207,7 @@ async def main(phone):
 
 
     handle_fd = config['Telegram']['handle_fd']
-    f_name = config['Telegram']['f_name']
+    csv = config['Telegram']['csv']
     parent_dir = config['Telegram']['parent_dir']
 
 #real day
@@ -227,7 +227,7 @@ async def main(phone):
 
 
     create_handling_folder(parent_dir, 'products_handaling')
-    print_welcome_csv_importer(f_name)
+    print_welcome_csv_importer(csv)
 
 
 
@@ -249,67 +249,109 @@ async def main(phone):
         messages = history.messages
 
         for message in messages:
-
-            id = str(message.id)
-            msg_content = str(message.message)
-            new_file_name = parent_dir + id
-
-            full_file_name = await client.download_media(message.media, parent_dir)
-
-
+            sleep(0.15)
 
             all_messages.append(message.to_dict())
-
-            try:
-                os.rename(full_file_name, handle_fd + id)
-            except:
-                logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
-
-            img_counter += 1
+            id = str(message.id)
+            #
+            # if id == '484428':
+            #     pass
 
 
-            if msg_content != '': #it's a content message
 
-                directory_name = 'Item_'+id
+            if message.message == '':
+                full_file_name = await client.download_media(message.media, parent_dir)
+                img_counter += 1
                 ids_obj.append(id)
 
-                message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
-                details = get_message_details(msg_content, no_link_recived_cnt)
-
-                title = details[0]
-                price = details[1]
-                url = details[2]
-                next_url = details[3]
-                affiliate_link = details[4]
-                no_link_recived_cnt = details[5]
+                try:
+                    os.rename(full_file_name, handle_fd + id)
+                except:
+                    logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
 
 
 
-                add_item_images_folder(parent_dir, directory_name)
-                rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj)
-
-
-                if os.path.exists(parent_dir + f_name):
-                    send_msg_to_csv(message_time, f_name, title, price, url, next_url, affiliate_link, id, str(ids_obj), parent_dir, directory_name)
-                else:
-                    create_csv(parent_dir, f_name)
-                    send_msg_to_csv(message_time, f_name, title, price, url, next_url, affiliate_link, id, str(ids_obj), parent_dir, directory_name)
-
-                print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
-
-
-                #reinit counters and objects
-                img_counter = 0
-                msg_count += 1
-                ids_obj = []
-
+            #txt msg only
             else:
-                ids_obj.append(id)
-                offset_id = messages[len(messages) - 1].id
-                total_messages = len(all_messages)
+                #txt message + handling is conatin photos + NOT first try
+                if os.listdir(handle_fd):
 
-                if total_count_limit != 0 and total_messages >= total_count_limit:
-                    break
+                    #open folder for new id
+                    id = str(message.id)
+                    last_id = str(last_main_msg.id)
+                    directory_name = 'Item_' + last_id
+
+                    add_item_images_folder(parent_dir, directory_name)
+                    rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj)
+
+
+
+
+
+                    # handaling text to log and csv
+                    message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
+                    try:
+                        details = get_message_details(message.message, no_link_recived_cnt)
+                    except:
+                        details = ['no title', 'no title', 'no title', 'no title', 'no title', 'no title']
+                    title = details[0]
+                    price = details[1]
+                    url = details[2]
+                    next_url = details[3]
+                    affiliate_link = details[4]
+                    no_link_recived_cnt = details[5]
+
+                    if os.path.exists(parent_dir + csv):
+                        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, id,
+                                        str(ids_obj), parent_dir, directory_name)
+                    else:
+                        create_csv(parent_dir, csv)
+                        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, id,
+                                        str(ids_obj), parent_dir, directory_name)
+
+                    new_file_name = ''
+
+                    print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
+
+
+                    ids_obj = []
+                    first_try = False
+
+
+
+                    last_main_msg = message
+
+
+                else:
+                    # reinit counters and objects
+                    last_main_msg = message
+
+
+                    img_counter = 0
+                    msg_count += 1
+                    directory_name = 'Item_'+id
+
+                    #first photo and txt
+                    full_file_name = await client.download_media(message.media, parent_dir)
+                    msg_content = str(message.message)
+                    new_file_name = parent_dir + id
+                    add_item_images_folder(parent_dir, directory_name)
+
+
+
+                    ids_obj.append(id)
+
+                    try:
+                        os.rename(full_file_name, handle_fd + id)
+                    except:
+                        logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
+                # full_file_name = await client.download_media(message.media, parent_dir)
+
+            offset_id = messages[len(messages) - 1].id
+            total_messages = len(all_messages)
+
+            if total_count_limit != 0 and total_messages >= total_count_limit:
+                break
 with client:
     logger = logger_init()
     client.loop.run_until_complete(main(phone))
