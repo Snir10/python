@@ -72,7 +72,8 @@ def create_csv(path, name):
 def rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj):
     for item in ids_obj:
         Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
-def add_item_images_folder(parent_dir, directory_name):
+
+def add_item_folder(parent_dir, directory_name):
     path = os.path.join(parent_dir, directory_name)
     try:
         os.mkdir(path)
@@ -253,9 +254,9 @@ async def main(phone, last_main_msg=None, first_try=True):
 
             all_messages.append(message.to_dict())
             id = str(message.id)
-            #
-            # if id == '484428':
-            #     pass
+
+            if id == '484779':
+                pass
 
 
 
@@ -281,17 +282,15 @@ async def main(phone, last_main_msg=None, first_try=True):
                     last_id = str(last_main_msg.id)
                     directory_name = 'Item_' + last_id
 
-                    add_item_images_folder(parent_dir, directory_name)
+                    add_item_folder(parent_dir, directory_name)
                     rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj)
-
-
 
 
 
                     # handaling text to log and csv
                     message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
                     try:
-                        details = get_message_details(message.message, no_link_recived_cnt)
+                        details = get_message_details(last_main_msg.message, no_link_recived_cnt)
                     except:
                         details = ['no title', 'no title', 'no title', 'no title', 'no title', 'no title']
                     title = details[0]
@@ -302,19 +301,31 @@ async def main(phone, last_main_msg=None, first_try=True):
                     no_link_recived_cnt = details[5]
 
                     if os.path.exists(parent_dir + csv):
-                        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, id,
+                        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
                                         str(ids_obj), parent_dir, directory_name)
                     else:
                         create_csv(parent_dir, csv)
-                        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, id,
+                        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
                                         str(ids_obj), parent_dir, directory_name)
 
                     new_file_name = ''
 
-                    print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
+                    print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
 
 
                     ids_obj = []
+
+                    # TODO - download and move current photo to new folder opened
+
+                    full_file_name = await client.download_media(message.media, parent_dir)
+
+                    try:
+                        os.rename(full_file_name, handle_fd + id)
+                    except:
+                        logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
+                    # full_file_name = await client.download_media(message.media, parent_dir)
+
+                    ids_obj.append(id)
                     first_try = False
 
 
@@ -335,7 +346,7 @@ async def main(phone, last_main_msg=None, first_try=True):
                     full_file_name = await client.download_media(message.media, parent_dir)
                     msg_content = str(message.message)
                     new_file_name = parent_dir + id
-                    add_item_images_folder(parent_dir, directory_name)
+                    add_item_folder(parent_dir, directory_name)
 
 
 
