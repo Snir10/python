@@ -27,36 +27,11 @@ class DateTimeEncoder(json.JSONEncoder):
 
         return json.JSONEncoder.default(self, o)
 
-# Reading Configs
-config = configparser.ConfigParser()
-config.read("config_files/importer_config.ini")
 
-# Setting configuration values
-api_id = config['Telegram']['api_id']
-api_hash = config['Telegram']['api_hash']
 
-phone = config['Telegram']['phone']
-username = config['Telegram']['username']
-conf_id = config['Telegram']['importer_last_id']
 
-# Create the client and connect
-client = TelegramClient(username, api_id, api_hash)
 
-#NOT IN USE
-def validate_last_id(id, conf_id):
-    if conf_id == id:
-        logging.info(f'### arrived to dest ID: {id} ###')
-        logging.info(f'### SUCCESSFULLY DONE {id} ###')
-        logging.info(f'###  {id} ###')
-        logging.info(f'### arrived to dest ID: {id} ###')
-
-        sleep(20)
-        exit(0)
-def validate_black_list(string):
-    if string.__contains__('https://hypeallie.online/jackzhang/'):
-        return True
-
-#CSV FUNCTIONS
+#CSV File
 def send_msg_to_csv(message_time, csv_f_name, title, price, link, nexturl, affiliate_link, id, images, parent, dir_name):
     with open(parent+csv_f_name, 'a', encoding='UTF8', newline='') as f:
         data = [message_time, title, price, link, nexturl,affiliate_link, id, images, parent+dir_name]
@@ -68,11 +43,19 @@ def create_csv(path, name):
         writer = csv.writer(f)
         writer.writerow(header)
 
-#Files HANDALING
+#Rename and Move
 def rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj):
-    for item in ids_obj:
-        Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
 
+    #TODO - IF ITEM IS *.MP4 - to handle it as video.
+
+    for item in ids_obj:
+        try:
+            Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
+        except:
+            logger.error(f'Cannot move from{handle_fd + item} to {parent_dir + directory_name + item}')
+
+
+#Create Folders
 def add_item_folder(parent_dir, directory_name):
     path = os.path.join(parent_dir, directory_name)
     try:
@@ -91,15 +74,36 @@ def create_handling_folder(parent_dir, param):
         if e.errno != errno.EEXIST:
             pass
 
-#GET MSG TEXT
-def get_message_details(msg_content, vl_no_link_count):
-    price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
+#Get Msg TXT
+def getTitle(msg_content):
     title = msg_content.split('-')[0]
+    return title
+
+    pass
+def getPrice(msg_content):
+    price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
+
+    # title = msg_content.split('-')[0]
     price = price.split('\\')[0][2::]
     price = price.replace('$', '')
-    price = price+'$'
-
+    return price+'$'
+def getURL(msg_content):
     url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
+    return url
+def setAffiliateLink():
+    pass
+
+
+def get_message_details(msg_content, vl_no_link_count):
+    #TODO - get title, get price, get url, set aff link,
+
+    title = getTitle(msg_content)
+    price = getPrice(msg_content)
+    url = getURL(msg_content)
+    # setAffiliateLink(msg_content)
+
+
+    #url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
     next_url = requests.get(url).url.split('?')[0]
     if next_url.startswith('https://he.aliexpress.com/item/'):
         aliexpress = AliexpressApi('34061046',
@@ -119,7 +123,6 @@ def get_message_details(msg_content, vl_no_link_count):
         affiliate_link = 'No Ali Express link detected'
         vl_no_link_count += 1
 
-    sleep(2)
 
     return [title, price, url, next_url, affiliate_link, vl_no_link_count]
 
@@ -155,7 +158,7 @@ def print_welcome_csv_importer(f_name):
     print('###############\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t##############')
     print('###############\t\tWelcome to CSV Importer\t\t\t\t\t\t\t\t\t##############')
     print(f'###############\t\tCSV file =>\t{f_name}\t\t\t\t\t\t\t\t##############')
-    print(f'###############\t\twill FINISH importing until -> ID:{conf_id}\t\t\t\t##############')
+    print(f'###############\t\twill FINISH importing until -> ID:\t\t\t\t##############')
     print('###############\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t##############')
     print(f'##########################################################################################')
 def logger_init():
@@ -175,10 +178,25 @@ def logger_init():
     logger.addHandler(fh)
 
     return logger
+def initalConfig():
+    # Reading Configs
+    config.read("config_files/importer_config.ini")
+
+    # Setting configuration values
+    api_id = config['Telegram']['api_id']
+    api_hash = config['Telegram']['api_hash']
+
+    phone = config['Telegram']['phone']
+    username = config['Telegram']['username']
+
+    # Create the client and connect
+    client = TelegramClient(username, api_id, api_hash)
+
+    return [client, phone]
 
 
 #MAIN FOLDER
-async def main(phone, last_main_msg=None, first_try=True):
+async def main(phone, last_main_msg=None):
 
     await client.start()
     # Ensure you're authorized - was ->    if await client.is_user_authorized() == False: !!!
@@ -200,7 +218,7 @@ async def main(phone, last_main_msg=None, first_try=True):
     total_count_limit = 0
     ids_obj = []
 
-
+    main_msg_id_counter = 0
     msg_count = 0
     img_counter = 0
     no_link_recived_cnt = 0
@@ -221,12 +239,6 @@ async def main(phone, last_main_msg=None, first_try=True):
         if e.errno != errno.EEXIST:
             pass
 
-##
-    #parent_dir = path
-
-
-
-
     create_handling_folder(parent_dir, 'products_handaling')
     print_welcome_csv_importer(csv)
 
@@ -234,7 +246,7 @@ async def main(phone, last_main_msg=None, first_try=True):
 
     while True:
 
-        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:", msg_count, "|| No link count:", no_link_recived_cnt, ' ||\n')
+        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:", main_msg_id_counter, "|| No link count:", no_link_recived_cnt, '|| aff_links', int(main_msg_id_counter-no_link_recived_cnt))
         history = await client(GetHistoryRequest(
             peer=my_channel,
             offset_id=offset_id,
@@ -250,16 +262,11 @@ async def main(phone, last_main_msg=None, first_try=True):
         messages = history.messages
 
         for message in messages:
-            sleep(0.15)
 
             all_messages.append(message.to_dict())
             id = str(message.id)
 
-            if id == '484779':
-                pass
-
-
-
+            #photo only
             if message.message == '':
                 full_file_name = await client.download_media(message.media, parent_dir)
                 img_counter += 1
@@ -272,9 +279,10 @@ async def main(phone, last_main_msg=None, first_try=True):
 
 
 
-            #txt msg only
+            #txt msg + photo
             else:
-                #txt message + handling is conatin photos + NOT first try
+                main_msg_id_counter += 1
+                #txt message + handling is conatin photos
                 if os.listdir(handle_fd):
 
                     #open folder for new id
@@ -291,6 +299,7 @@ async def main(phone, last_main_msg=None, first_try=True):
                     message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
                     try:
                         details = get_message_details(last_main_msg.message, no_link_recived_cnt)
+
                     except:
                         details = ['no title', 'no title', 'no title', 'no title', 'no title', 'no title']
                     title = details[0]
@@ -311,11 +320,7 @@ async def main(phone, last_main_msg=None, first_try=True):
                     new_file_name = ''
 
                     print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
-
-
                     ids_obj = []
-
-                    # TODO - download and move current photo to new folder opened
 
                     full_file_name = await client.download_media(message.media, parent_dir)
 
@@ -323,10 +328,9 @@ async def main(phone, last_main_msg=None, first_try=True):
                         os.rename(full_file_name, handle_fd + id)
                     except:
                         logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
-                    # full_file_name = await client.download_media(message.media, parent_dir)
 
                     ids_obj.append(id)
-                    first_try = False
+                    img_counter = 0
 
 
 
@@ -334,7 +338,6 @@ async def main(phone, last_main_msg=None, first_try=True):
 
 
                 else:
-                    # reinit counters and objects
                     last_main_msg = message
 
 
@@ -356,13 +359,26 @@ async def main(phone, last_main_msg=None, first_try=True):
                         os.rename(full_file_name, handle_fd + id)
                     except:
                         logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
-                # full_file_name = await client.download_media(message.media, parent_dir)
 
             offset_id = messages[len(messages) - 1].id
             total_messages = len(all_messages)
 
             if total_count_limit != 0 and total_messages >= total_count_limit:
                 break
+
+
+
+
+
+
+
+config = configparser.ConfigParser()
+list = initalConfig()
+client = list[0]
+phone = list[1]
+
+
+
 with client:
     logger = logger_init()
     client.loop.run_until_complete(main(phone))

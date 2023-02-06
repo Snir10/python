@@ -18,66 +18,66 @@ import random
 '''upload all product 
 
 THIS method not in use anymore since we managed in the first lines of code'''
-def upload_all_products(details):
-    SUCCESS_RATE = 0
-    ERROR_RATE = 0
-
-    for i in range(len(details)):
-
-        list_of_product_details = get_item(details[i])
-
-        id = list_of_product_details[0]
-        title = list_of_product_details[1]
-        price = list_of_product_details[2]
-        link = list_of_product_details[3]
-        folder_path = list_of_product_details[4]
-        images_path_list = list_of_product_details[5]
-
-        validate_last_id(id)
-
-        x = '❤️🧡🧡💛💛💚💚🤍🖤💜💙🤎❤️❤️❤️‍🔥️‍🔥💓💓💞💞❣️❣️💗💘💝'
-        dollar = '💲'
-        nendh = '🤑💰💵💸💲$﹩＄💲'
-        vi = '✔'
-        title = title + ' ' + random.choice(x)
-
-        if link.__contains__('click.aliexpress'):
-            # manipulate price to pure float with 2 decimal digits
-            if price.__contains__('$'):
-                try:
-                    price = price.strip().replace('$', '')
-                    price = "{:.2f}".format(float(price))
-                except:
-                    print('no valid price')
-
-            price = str(price)+dollar
-            # caption text to send
-            text = '🛍️ ' + title[:20] + '\n\n' +\
-                   price + '\n\n\t👇🏻\t\t\tBuy it now\t\t\t👇🏻\t\t\n' + \
-                   '\n\n\t👇🏻\t\t\tPlease Choose According to the Options in Product Page\t\t\t👇🏻\t\t\n' + \
-                   link + '\n' +\
-                   str(SUCCESS_RATE)+'/'+str(SUCCESS_RATE + ERROR_RATE)
-
-            resp = send_media_group(chat_id=chat_id, images=images_path_list, folder_path=folder_path, caption=text)
-
-            z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link)
-            SUCCESS_RATE = z[0]
-            ERROR_RATE = z[1]
-
-            timeout = int(c['Telegram']['timeout'])
-
-            sleep(timeout)
-
-        else:
-            time = str(datetime.now().strftime("%b %d, %H:%M:%S"))
-            ERROR_RATE += 1
-
-            x = f'[ID:{id}]'+'[FAILED] ' + str(ERROR_RATE) + ' / ' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
-                  title + '\t' +\
-                  price + '\t' +\
-                  link + '\t' +\
-                  'link isnt containing s.click' + '\t'
-            logger.warning(x)
+# def upload_all_products(details):
+#     SUCCESS_RATE = 0
+#     ERROR_RATE = 0
+#
+#     for i in range(len(details)):
+#
+#         list_of_product_details = get_item(details[i])
+#
+#         id = list_of_product_details[0]
+#         title = list_of_product_details[1]
+#         price = list_of_product_details[2]
+#         link = list_of_product_details[3]
+#         folder_path = list_of_product_details[4]
+#         images_path_list = list_of_product_details[5]
+#
+#         #validate_last_id(id)
+#
+#         x = '❤️🧡🧡💛💛💚💚🤍🖤💜💙🤎❤️❤️❤️‍🔥️‍🔥💓💓💞💞❣️❣️💗💘💝'
+#         dollar = '💲'
+#         nendh = '🤑💰💵💸💲$﹩＄💲'
+#         vi = '✔'
+#         title = title + ' ' + random.choice(x)
+#
+#         if link.__contains__('click.aliexpress'):
+#             # manipulate price to pure float with 2 decimal digits
+#             if price.__contains__('$'):
+#                 try:
+#                     price = price.strip().replace('$', '')
+#                     price = "{:.2f}".format(float(price))
+#                 except:
+#                     print('no valid price')
+#
+#             price = str(price)+dollar
+#             # caption text to send
+#             text = '🛍️ ' + title[:20] + '\n\n' +\
+#                    price + '\n\n\t👇🏻\t\t\tBuy it now\t\t\t👇🏻\t\t\n' + \
+#                    '\n\n\t👇🏻\t\t\tPlease Choose According to the Options in Product Page\t\t\t👇🏻\t\t\n' + \
+#                    link + '\n' +\
+#                    str(SUCCESS_RATE)+'/'+str(SUCCESS_RATE + ERROR_RATE)
+#
+#             resp = send_media_group(chat_id=chat_id, images=images_path_list, folder_path=folder_path, caption=text)
+#
+#             z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link)
+#             SUCCESS_RATE = z[0]
+#             ERROR_RATE = z[1]
+#
+#             timeout = int(c['Telegram']['timeout'])
+#
+#             sleep(timeout)
+#
+#         else:
+#             time = str(datetime.now().strftime("%b %d, %H:%M:%S"))
+#             ERROR_RATE += 1
+#
+#             x = f'[ID:{id}]'+'[FAILED] ' + str(ERROR_RATE) + ' / ' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
+#                   title + '\t' +\
+#                   price + '\t' +\
+#                   link + '\t' +\
+#                   'link isnt containing s.click' + '\t'
+#             logger.warning(x)
 
 
 
@@ -272,7 +272,7 @@ def manipulate_msg_text_for_upload(list_of_product_details, SUCCESS_RATE, ERROR_
         resp = send_media_group(chat_id=chat_id, images=images_path_list, folder_path=folder_path, caption=text)
         if resp.status_code == 429:
             logger.debug(f'\tID:{msg_id} [FAILED] with 429 -> RETRYING')
-            sleep(15)
+            sleep(10)
             resp = send_media_group(chat_id=chat_id, images=images_path_list, folder_path=folder_path, caption=text)
 
         z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, msg_id, title, price, link)
@@ -331,13 +331,22 @@ scs_rate = 0
 err_rate = 0
 
 
-''' Main Functions
+''' #########       Main Functions        #########
 
 
-here we start uploader program
-all files in config file csv will be published in 
-
-'''
+    main method Scenario
+    1. open CSV
+    2. print welcome
+    3. create list of IDs
+    4. iterate between IDs till end.
+    
+    feature request:
+    add to log:
+        photo IDs
+        fix spaces issues
+        add more error logs
+        fix counters                               
+        '''
 
 
 #csv to double lists [] []
@@ -358,4 +367,4 @@ for msg_id in list_of_ids:
 
 
 
-#upload_all_products(details)
+print('finished')
