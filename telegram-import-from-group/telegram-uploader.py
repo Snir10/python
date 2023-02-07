@@ -79,7 +79,21 @@ THIS method not in use anymore since we managed in the first lines of code'''
 #                   'link isnt containing s.click' + '\t'
 #             logger.warning(x)
 
+''' #########       Main Functions        #########
 
+
+    main method Scenario
+    1. open CSV
+    2. print welcome
+    3. create list of IDs
+    4. iterate between IDs till end.
+
+    feature request:
+    add to log:
+        photo IDs
+        fix spaces issues
+        add more error logs
+        fix counters                               '''
 
 
 def open_csv(csv_path):
