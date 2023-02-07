@@ -1,0 +1,8 @@
+2023-02-03 02:51:26 [ERROR] [FAILED]	[ID: 484503]  Title: NIKE            	Price:70$	Link:https://bit.ly/3WWfCFQ	Aff_link:Failed to convert Ali Express link	Saved-> 	Images files:['484503', '484503']	img count: 8
+2023-02-03 02:51:29 [ERROR] error occurred with moving file from/Users/user/Desktop/Backup/products_handaling/ to /Users/user/Desktop/Backup/Item_484503
+2023-02-03 02:51:33 [ERROR] [FAILED]	[ID: 484496]  Title: Coach REVEL BAG 	Price:69.54$	Link:https://bit.ly/40j1xV5	Aff_link:No Ali Express link detected	Saved-> 	Images files:['484496', '484496']	img count: 14
+2023-02-03 02:51:37 [ERROR] error occurred with moving file from/Users/user/Desktop/Backup/products_handaling/ to /Users/user/Desktop/Backup/Item_484496
+2023-02-03 02:51:43 [INFO] [SUCCESS]	[ID: 484486]  Title: Nike Air Presto x  	Price:57.60$	Link:https://bit.ly/3Jq70DD	Aff_link:https://s.click.aliexpress.com/e/_EzfuirL	Saved-> 	Images files:['484486', '484486']	img count: 23
+2023-02-03 02:51:46 [ERROR] error occurred with moving file from/Users/user/Desktop/Backup/products_handaling/ to /Users/user/Desktop/Backup/Item_484486
+2023-02-03 02:51:47 [ERROR] [FAILED]	[ID: 484478]  Title: no title        	Price:no title	Link:no title	Aff_link:no title	Saved-> 	Images files:['484478', '484478']	img count: 30
+2023-02-03 02:51:50 [ERROR] error occurred with moving file from/Users/user/Desktop/Backup/products_handaling/ to /Users/user/Desktop/Backup/Item_484478
