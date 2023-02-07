@@ -317,9 +317,6 @@ def get_ids_from_csv(csv_path):
 c = configparser.ConfigParser()
 c.read("config_files/uploader_config.ini")
 
-logger = logger_init()
-
-
 bot_id = c['Telegram']['bot_id']
 SEND_MEDIA_GROUP = c['Telegram']['media_group']
 chat_id = c['Telegram']['chat_id']
@@ -329,6 +326,8 @@ timeout = c['Telegram']['timeout']
 
 scs_rate = 0
 err_rate = 0
+
+logger = logger_init()
 
 
 ''' #########       Main Functions        #########
@@ -345,8 +344,7 @@ err_rate = 0
         photo IDs
         fix spaces issues
         add more error logs
-        fix counters                               
-        '''
+        fix counters                               '''
 
 
 #csv to double lists [] []
@@ -367,4 +365,4 @@ for msg_id in list_of_ids:
 
 
 
-print('finished')
+logger.info('finished')

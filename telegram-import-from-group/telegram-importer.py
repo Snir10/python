@@ -145,7 +145,7 @@ def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, 
         'Link:' + url + '\t' +\
         'Aff_link:' + affiliate_link + '\t' +\
         'Saved-> ' + new_file_name + '\t' +\
-        'Images files:' + str(ids_obj) + '\t' +\
+        'Image files:' + str(ids_obj) + '\t' +\
         'img count: '+str(img_count)
 
 
@@ -246,7 +246,7 @@ async def main(phone, last_main_msg=None):
 
     while True:
 
-        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:", main_msg_id_counter, "|| No link count:", no_link_recived_cnt, '|| aff_links', int(main_msg_id_counter-no_link_recived_cnt))
+        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:", main_msg_id_counter, "|| No link count:", no_link_recived_cnt, '|| aff_links', int(main_msg_id_counter-no_link_recived_cnt), '\n')
         history = await client(GetHistoryRequest(
             peer=my_channel,
             offset_id=offset_id,
@@ -293,8 +293,6 @@ async def main(phone, last_main_msg=None):
                     add_item_folder(parent_dir, directory_name)
                     rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj)
 
-
-
                     # handaling text to log and csv
                     message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
                     try:
@@ -318,6 +316,7 @@ async def main(phone, last_main_msg=None):
                                         str(ids_obj), parent_dir, directory_name)
 
                     new_file_name = ''
+                    img_counter += 1
 
                     print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
                     ids_obj = []
