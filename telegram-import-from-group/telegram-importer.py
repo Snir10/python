@@ -26,11 +26,6 @@ class DateTimeEncoder(json.JSONEncoder):
             return list(o)
 
         return json.JSONEncoder.default(self, o)
-
-
-
-
-
 #CSV File
 def send_msg_to_csv(message_time, csv_f_name, title, price, link, nexturl, affiliate_link, id, images, parent, dir_name):
     with open(parent+csv_f_name, 'a', encoding='UTF8', newline='') as f:
@@ -42,7 +37,6 @@ def create_csv(path, name):
         header = ['uploaded time', 'title', 'price', 'link','next url','affiliate_link',  'id', 'images', 'path']
         writer = csv.writer(f)
         writer.writerow(header)
-
 #Rename and Move
 def rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj):
 
@@ -53,8 +47,6 @@ def rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj):
             Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
         except:
             logger.error(f'Cannot move from{handle_fd + item} to {parent_dir + directory_name + item}')
-
-
 #Create Folders
 def add_item_folder(parent_dir, directory_name):
     path = os.path.join(parent_dir, directory_name)
@@ -73,7 +65,6 @@ def create_handling_folder(parent_dir, param):
     except OSError as e:
         if e.errno != errno.EEXIST:
             pass
-
 #Get Msg TXT
 def getTitle(msg_content):
     title = msg_content.split('-')[0]
@@ -92,8 +83,6 @@ def getURL(msg_content):
     return url
 def setAffiliateLink():
     pass
-
-
 def get_message_details(msg_content, vl_no_link_count):
     #TODO - get title, get price, get url, set aff link,
 
@@ -115,7 +104,7 @@ def get_message_details(msg_content, vl_no_link_count):
         if list_string.split('/')[2] == 's.click.aliexpress.com':
             affiliate_link = affiliate_link[0].promotion_link
         else:
-            affiliate_link = 'Failed to convert Ali Express link'
+            affiliate_link = 'Failed to convert Ali Express link\t\t'
             vl_no_link_count +=1
     elif next_url.startswith('https://best.aliexpress.com'):
             affiliate_link = 'BROKEN: best.aliexpress.com'
@@ -125,9 +114,8 @@ def get_message_details(msg_content, vl_no_link_count):
 
 
     return [title, price, url, next_url, affiliate_link, vl_no_link_count]
-
 #LOG HANDALING
-def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count):
+def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count, msg_time):
 
     title = title.strip()[:18]
     title = '{:<15}'.format(title)
@@ -140,6 +128,7 @@ def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, 
 
     x = status + '\t' + \
         f'[ID: {id}]  ' \
+        f'Uploaded in: {msg_time} \t' +\
         f'Title: {title} \t' +\
         'Price:' + price + '\t' +\
         'Link:' + url + '\t' +\
@@ -193,8 +182,6 @@ def initalConfig():
     client = TelegramClient(username, api_id, api_hash)
 
     return [client, phone]
-
-
 #MAIN FOLDER
 async def main(phone, last_main_msg=None):
 
@@ -222,6 +209,8 @@ async def main(phone, last_main_msg=None):
     msg_count = 0
     img_counter = 0
     no_link_recived_cnt = 0
+    affLinkCount = 0
+    successRate = '0.00%'
 
 
 
@@ -246,7 +235,10 @@ async def main(phone, last_main_msg=None):
 
     while True:
 
-        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:", main_msg_id_counter, "|| No link count:", no_link_recived_cnt, '|| aff_links', int(main_msg_id_counter-no_link_recived_cnt), '\n')
+        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
+              main_msg_id_counter, "|| No link count:", no_link_recived_cnt, '|| aff_links', str(affLinkCount),'|| SUCESS_RATE', str(successRate), '\n')
+
+
         history = await client(GetHistoryRequest(
             peer=my_channel,
             offset_id=offset_id,
@@ -307,6 +299,10 @@ async def main(phone, last_main_msg=None):
                     affiliate_link = details[4]
                     no_link_recived_cnt = details[5]
 
+                    affLinkCount = main_msg_id_counter - no_link_recived_cnt
+                    x = (affLinkCount / main_msg_id_counter) * 100
+                    successRate = str(round(x, 2)) + '%'
+
                     if os.path.exists(parent_dir + csv):
                         send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
                                         str(ids_obj), parent_dir, directory_name)
@@ -318,7 +314,7 @@ async def main(phone, last_main_msg=None):
                     new_file_name = ''
                     img_counter += 1
 
-                    print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter)
+                    print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter, message_time)
                     ids_obj = []
 
                     full_file_name = await client.download_media(message.media, parent_dir)
@@ -364,20 +360,10 @@ async def main(phone, last_main_msg=None):
 
             if total_count_limit != 0 and total_messages >= total_count_limit:
                 break
-
-
-
-
-
-
-
 config = configparser.ConfigParser()
 list = initalConfig()
 client = list[0]
 phone = list[1]
-
-
-
 with client:
     logger = logger_init()
     client.loop.run_until_complete(main(phone))

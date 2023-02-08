@@ -149,10 +149,12 @@ def send_media_group(chat_id, images, folder_path, caption='new message', reply_
         media[0]['caption'] = caption
 
         resp = requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media), 'reply_to_message_id': reply_to_message_id}, files=files, verify=False)
+        sleep(int(timeout))
+
         return resp
 def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link):
 
-    #time = datetime.now().strftime("%b %d, %H:%M:%S")
+
     title = title.strip()[:20]
     #make title fixed length
     title = '{:<15}'.format(title)
@@ -188,15 +190,15 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
         logger.error(x)
     else:
         ERROR_RATE += 1
-        x = f'[ID:{id}]'+'[FAILED]' + \
+        x = f'[ID:{id}]'+'[FAILED] ' + \
             str(ERROR_RATE) + ' / ' + str(ERROR_RATE + SUCCESS_RATE) +\
             title + '\t' +\
             price + '\t' +\
             link + '\t' + \
             'ERROR -> ' +\
             'status:' + str(resp.status_code) +\
-            +resp.text
-        #print(x)
+             resp.text
+
         logger.error(x)
 
     return SUCCESS_RATE, ERROR_RATE
@@ -310,12 +312,14 @@ def upload_product_by_id(msg_id, SUCCESS_RATE, ERROR_RATE):
         for line in csv.DictReader(csv_file):
 
             if line is not None and line['id'] == msg_id:
-                values = list(line.values())
-                list_of_product_details = get_item(values)
-
-                rates = manipulate_msg_text_for_upload(list_of_product_details, SUCCESS_RATE, ERROR_RATE)
-                SUCCESS_RATE = rates[0]
-                ERROR_RATE = rates[1]
+                if line['affiliate_link'][:3] == 'htt':
+                    values = list(line.values())
+                    list_of_product_details = get_item(values)
+                    rates = manipulate_msg_text_for_upload(list_of_product_details, SUCCESS_RATE, ERROR_RATE)
+                    SUCCESS_RATE = rates[0]
+                    ERROR_RATE = rates[1]
+                else:
+                    logger.warning('skipping no link line')
 
     return [SUCCESS_RATE, ERROR_RATE]
 def get_ids_from_csv(csv_path):
@@ -375,7 +379,7 @@ for msg_id in list_of_ids:
     #counters update
     scs_rate = rates[0]
     err_rate = rates[1]
-    sleep(int(timeout))
+    # sleep(int(timeout))
 
 
 
