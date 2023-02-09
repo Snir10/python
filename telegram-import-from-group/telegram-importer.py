@@ -86,13 +86,11 @@ def setAffiliateLink():
     pass
 def get_message_details(msg_content, vl_no_link_count, aliexpress):
     #TODO - get title, get price, get url, set aff link,
-
-    title = getTitle(msg_content)
+    #title = getTitle(msg_content)
     price = getPrice(msg_content)
     url = getURL(msg_content)
     # setAffiliateLink(msg_content)
-
-
+    title = 'error'
     #url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
     next_url = requests.get(url).url.split('?')[0]
     if next_url.startswith('https://he.aliexpress.com/item/'):
@@ -108,8 +106,6 @@ def get_message_details(msg_content, vl_no_link_count, aliexpress):
     else:
         affiliate_link = 'No Ali Express link detected'
         vl_no_link_count += 1
-
-
     return [title, price, url, next_url, affiliate_link, vl_no_link_count]
 #LOG Handling
 def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count, msg_time):
@@ -190,15 +186,11 @@ def createParentDir(parent_dir):
     except OSError as e:
         if e.errno != errno.EEXIST:
             pass
-
-
 def createAliExpressInstance():
     return AliexpressApi('34061046',
                                '3766ae9cf22b81c88134fb56f71eb03c',
                                models.Language.EN,
                                models.Currency.EUR, 'sn2019')
-
-
 def sendMsgInfoToCSV(message_time, csv, title, price, url, next_url, affiliate_link, last_id, ids_obj, parent_dir,
                      directory_name):
     if os.path.exists(parent_dir + csv):
@@ -208,10 +200,12 @@ def sendMsgInfoToCSV(message_time, csv, title, price, url, next_url, affiliate_l
         create_csv(parent_dir, csv)
         send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
                         str(ids_obj), parent_dir, directory_name)
-
-
+def renameImg(full_file_name, handle_fd, id):
+    try:
+        os.rename(full_file_name, handle_fd + id)
+    except:
+        logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
 async def main(phone, last_main_msg=None):
-
     await client.start()
     # Ensure you're authorized - was ->    if await client.is_user_authorized() == False: !!!
     if not await client.is_user_authorized():
@@ -220,9 +214,7 @@ async def main(phone, last_main_msg=None):
             await client.sign_in(phone, input('Enter the code: '))
         except SessionPasswordNeededError:
             await client.sign_in(password=input('Password: '))
-
     #me = await client.get_me()
-
     entity = 'https://t.me/hypeallie'
     my_channel = await client.get_entity(entity)
     offset_id = 0
@@ -231,34 +223,23 @@ async def main(phone, last_main_msg=None):
     total_messages = 0
     total_count_limit = 0
     ids_obj = []
-
     main_msg_id_counter = 0
     msg_count = 0
     img_counter = 0
     no_link_recived_cnt = 0
     affLinkCount = 0
     successRate = '0.00%'
-
-
-
     handle_fd = config['Telegram']['handle_fd']
     csv = config['Telegram']['csv']
     parent_dir = config['Telegram']['parent_dir']
-
 #real day
     createParentDir(parent_dir)
     createTempImgFolder(parent_dir, 'products_handaling')
     print_welcome_csv_importer(csv)
     aliexpress = createAliExpressInstance()
-
-
-
     while True:
-
         print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
               main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt,'|| SUCESS_RATE', str(successRate), '\n')
-
-
         history = await client(GetHistoryRequest(
             peer=my_channel,
             offset_id=offset_id,
@@ -272,50 +253,37 @@ async def main(phone, last_main_msg=None):
         if not history.messages:
             break
         messages = history.messages
-
         for message in messages:
-
             all_messages.append(message.to_dict())
             id = str(message.id)
-
             #photo or video only
             if message.message == '':
                 full_file_name = await client.download_media(message.media, parent_dir)
                 img_counter += 1
                 ids_obj.append(id)
-
-                try:
-                    #TODO - fix video files
-                    os.rename(full_file_name, handle_fd + id)
-                except:
-                    logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
-
-
-
+                renameImg(full_file_name, handle_fd, id)
             #txt msg + photo
             else:
                 main_msg_id_counter += 1
                 #txt message + handling is conatin photos
                 if os.listdir(handle_fd):
-
                     #open folder for new id
                     id = str(message.id)
                     last_id = str(last_main_msg.id)
                     directory_name = 'Item_' + last_id
-
                     createItemDirectory(parent_dir, directory_name)
                     rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj)
-
                     # handaling text to log and csv
                     message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
                     try:
                         details = get_message_details(last_main_msg.message, no_link_recived_cnt, aliexpress)
-
                     except:
                         details = ['no title', 'no title', 'no title', 'no title', 'no title', 'no title']
-                    title = details[0]
-                    price = details[1]
-                    url = details[2]
+
+                    title = getTitle(last_main_msg.message)
+                    price = getPrice(last_main_msg.message)
+                    url = getURL(last_main_msg.message)
+
                     next_url = details[3]
                     affiliate_link = details[4]
                     no_link_recived_cnt = details[5]
@@ -325,58 +293,32 @@ async def main(phone, last_main_msg=None):
                         successRate = str(round(x, 2)) + '%'
                     except:
                         logger.error('failed to calculate success rate')
-
                     sendMsgInfoToCSV(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
                                     str(ids_obj), parent_dir, directory_name)
-
-
                     new_file_name = ''
                     img_counter += 1
-
                     print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter, message_time)
                     ids_obj = []
-
                     full_file_name = await client.download_media(message.media, parent_dir)
-
-                    try:
-                        os.rename(full_file_name, handle_fd + id)
-                    except:
-                        logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
-
+                    renameImg(full_file_name, handle_fd, id)
                     ids_obj.append(id)
                     img_counter = 0
-
-
                     last_main_msg = message
-
-
                 else: # handle fd empty + txt message = first message
                     logger.info('first message?')
                     last_main_msg = message
-
-
                     img_counter = 0
                     msg_count += 1
                     directory_name = 'Item_'+id
-
                     #first photo and txt
                     full_file_name = await client.download_media(message.media, parent_dir)
                     msg_content = str(message.message)
                     new_file_name = parent_dir + id
                     createItemDirectory(parent_dir, directory_name)
-
-
-
                     ids_obj.append(id)
-
-                    try:
-                        os.rename(full_file_name, handle_fd + id)
-                    except:
-                        logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
-
+                    renameImg(full_file_name, handle_fd, id)
             offset_id = messages[len(messages) - 1].id
             total_messages = len(all_messages)
-
             if total_count_limit != 0 and total_messages >= total_count_limit:
                 break
 config = configparser.ConfigParser()
