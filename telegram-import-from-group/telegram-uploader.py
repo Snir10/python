@@ -279,12 +279,12 @@ def manipulate_msg_text_for_upload(list_of_product_details, SUCCESS_RATE, ERROR_
 
         price = str(price) + dollar
         # caption text to send
-        text = title[:20] + '\n\n' + \
+        text = title[:20] + '\t|\t' +  \
                price + '\n' + \
-               '\nPlease Choose According to Photos ☝🏻☝🏻 \n' + \
-               '\n\n\t👇🏻\t\t\tBuy it now\t\t\t👇🏻\t\t\n' + \
-               link + '\n' + \
-               str(SUCCESS_RATE) + '/' + str(SUCCESS_RATE + ERROR_RATE)
+               '\nPlz Follow Images Instructions ☝🏻 \n' + \
+               '\n\t🫴\t' + \
+               link + '\n'
+               #str(SUCCESS_RATE) + '/' + str(SUCCESS_RATE + ERROR_RATE)
 
         resp = send_media_group(chat_id=chat_id, images=images_path_list, folder_path=folder_path, caption=text)
         if resp.status_code == 429:

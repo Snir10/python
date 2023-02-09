@@ -81,9 +81,10 @@ def getPrice(msg_content):
 def getURL(msg_content):
     url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
     return url
+#TODO - TBD
 def setAffiliateLink():
     pass
-def get_message_details(msg_content, vl_no_link_count):
+def get_message_details(msg_content, vl_no_link_count, aliexpress):
     #TODO - get title, get price, get url, set aff link,
 
     title = getTitle(msg_content)
@@ -95,10 +96,6 @@ def get_message_details(msg_content, vl_no_link_count):
     #url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
     next_url = requests.get(url).url.split('?')[0]
     if next_url.startswith('https://he.aliexpress.com/item/'):
-        aliexpress = AliexpressApi('34061046',
-                                   '3766ae9cf22b81c88134fb56f71eb03c',
-                                   models.Language.EN,
-                                   models.Currency.EUR, 'sn2019')
         affiliate_link = aliexpress.get_affiliate_links(next_url)
         list_string = str(affiliate_link)
         if list_string.split('/')[2] == 's.click.aliexpress.com':
@@ -114,7 +111,7 @@ def get_message_details(msg_content, vl_no_link_count):
 
 
     return [title, price, url, next_url, affiliate_link, vl_no_link_count]
-#LOG HANDALING
+#LOG Handling
 def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count, msg_time):
 
     title = title.strip()[:18]
@@ -167,6 +164,7 @@ def logger_init():
     logger.addHandler(fh)
 
     return logger
+#Config Handling
 def initalConfig():
     # Reading Configs
     config.read("config_files/importer_config.ini")
@@ -182,7 +180,7 @@ def initalConfig():
     client = TelegramClient(username, api_id, api_hash)
 
     return [client, phone]
-#MAIN FOLDER
+#Create Folder
 def createParentDir(parent_dir):
     path = os.path.join(parent_dir)
 
@@ -192,6 +190,24 @@ def createParentDir(parent_dir):
     except OSError as e:
         if e.errno != errno.EEXIST:
             pass
+
+
+def createAliExpressInstance():
+    return AliexpressApi('34061046',
+                               '3766ae9cf22b81c88134fb56f71eb03c',
+                               models.Language.EN,
+                               models.Currency.EUR, 'sn2019')
+
+
+def sendMsgInfoToCSV(message_time, csv, title, price, url, next_url, affiliate_link, last_id, ids_obj, parent_dir,
+                     directory_name):
+    if os.path.exists(parent_dir + csv):
+        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
+                        str(ids_obj), parent_dir, directory_name)
+    else:
+        create_csv(parent_dir, csv)
+        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
+                        str(ids_obj), parent_dir, directory_name)
 
 
 async def main(phone, last_main_msg=None):
@@ -231,9 +247,9 @@ async def main(phone, last_main_msg=None):
 
 #real day
     createParentDir(parent_dir)
-
     createTempImgFolder(parent_dir, 'products_handaling')
     print_welcome_csv_importer(csv)
+    aliexpress = createAliExpressInstance()
 
 
 
@@ -262,13 +278,14 @@ async def main(phone, last_main_msg=None):
             all_messages.append(message.to_dict())
             id = str(message.id)
 
-            #photo only
+            #photo or video only
             if message.message == '':
                 full_file_name = await client.download_media(message.media, parent_dir)
                 img_counter += 1
                 ids_obj.append(id)
 
                 try:
+                    #TODO - fix video files
                     os.rename(full_file_name, handle_fd + id)
                 except:
                     logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
@@ -292,7 +309,7 @@ async def main(phone, last_main_msg=None):
                     # handaling text to log and csv
                     message_time = str(message.date.strftime("%b %d, %H:%M:%S"))
                     try:
-                        details = get_message_details(last_main_msg.message, no_link_recived_cnt)
+                        details = get_message_details(last_main_msg.message, no_link_recived_cnt, aliexpress)
 
                     except:
                         details = ['no title', 'no title', 'no title', 'no title', 'no title', 'no title']
@@ -309,14 +326,9 @@ async def main(phone, last_main_msg=None):
                     except:
                         logger.error('failed to calculate success rate')
 
+                    sendMsgInfoToCSV(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
+                                    str(ids_obj), parent_dir, directory_name)
 
-                    if os.path.exists(parent_dir + csv):
-                        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
-                                        str(ids_obj), parent_dir, directory_name)
-                    else:
-                        create_csv(parent_dir, csv)
-                        send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
-                                        str(ids_obj), parent_dir, directory_name)
 
                     new_file_name = ''
                     img_counter += 1
@@ -335,11 +347,11 @@ async def main(phone, last_main_msg=None):
                     img_counter = 0
 
 
-
                     last_main_msg = message
 
 
-                else:
+                else: # handle fd empty + txt message = first message
+                    logger.info('first message?')
                     last_main_msg = message
 
 
