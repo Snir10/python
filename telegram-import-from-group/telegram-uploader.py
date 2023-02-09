@@ -181,12 +181,13 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
     elif resp.status_code == 429:
         ERROR_RATE += 1
         x = f'[ID:{id}] [FAILED]' +\
-            ' ->ERROR CODE:429 - please Retry send ID]' + ' ' +\
             str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
               title + '\t' +\
               price + '\t' +\
-              link
-        #print(x)
+              link + \
+              ' ->ERROR CODE: 429 - please Retry send ID]' +\
+              resp.text
+
         logger.error(x)
     else:
         ERROR_RATE += 1

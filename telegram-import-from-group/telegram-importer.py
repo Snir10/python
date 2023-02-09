@@ -48,7 +48,7 @@ def rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj):
         except:
             logger.error(f'Cannot move from{handle_fd + item} to {parent_dir + directory_name + item}')
 #Create Folders
-def add_item_folder(parent_dir, directory_name):
+def createItemDirectory(parent_dir, directory_name):
     path = os.path.join(parent_dir, directory_name)
     try:
         os.mkdir(path)
@@ -56,7 +56,7 @@ def add_item_folder(parent_dir, directory_name):
     except OSError as e:
         if e.errno != errno.EEXIST:
             pass
-def create_handling_folder(parent_dir, param):
+def createTempImgFolder(parent_dir, param):
     path = os.path.join(parent_dir, param)
 
     try:
@@ -183,6 +183,17 @@ def initalConfig():
 
     return [client, phone]
 #MAIN FOLDER
+def createParentDir(parent_dir):
+    path = os.path.join(parent_dir)
+
+    try:
+        os.mkdir(path)
+    # fix for file already exists
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            pass
+
+
 async def main(phone, last_main_msg=None):
 
     await client.start()
@@ -219,16 +230,9 @@ async def main(phone, last_main_msg=None):
     parent_dir = config['Telegram']['parent_dir']
 
 #real day
-    path = os.path.join(parent_dir)
+    createParentDir(parent_dir)
 
-    try:
-        os.mkdir(path)
-    # fix for file already exists
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            pass
-
-    create_handling_folder(parent_dir, 'products_handaling')
+    createTempImgFolder(parent_dir, 'products_handaling')
     print_welcome_csv_importer(csv)
 
 
@@ -236,7 +240,7 @@ async def main(phone, last_main_msg=None):
     while True:
 
         print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
-              main_msg_id_counter, "|| No link count:", no_link_recived_cnt, '|| aff_links', str(affLinkCount),'|| SUCESS_RATE', str(successRate), '\n')
+              main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt,'|| SUCESS_RATE', str(successRate), '\n')
 
 
         history = await client(GetHistoryRequest(
@@ -282,7 +286,7 @@ async def main(phone, last_main_msg=None):
                     last_id = str(last_main_msg.id)
                     directory_name = 'Item_' + last_id
 
-                    add_item_folder(parent_dir, directory_name)
+                    createItemDirectory(parent_dir, directory_name)
                     rename_and_move_files(handle_fd, parent_dir, directory_name, ids_obj)
 
                     # handaling text to log and csv
@@ -298,10 +302,13 @@ async def main(phone, last_main_msg=None):
                     next_url = details[3]
                     affiliate_link = details[4]
                     no_link_recived_cnt = details[5]
+                    try:
+                        affLinkCount = main_msg_id_counter - no_link_recived_cnt
+                        x = (affLinkCount / main_msg_id_counter) * 100
+                        successRate = str(round(x, 2)) + '%'
+                    except:
+                        logger.error('failed to calculate success rate')
 
-                    affLinkCount = main_msg_id_counter - no_link_recived_cnt
-                    x = (affLinkCount / main_msg_id_counter) * 100
-                    successRate = str(round(x, 2)) + '%'
 
                     if os.path.exists(parent_dir + csv):
                         send_msg_to_csv(message_time, csv, title, price, url, next_url, affiliate_link, last_id,
@@ -344,7 +351,7 @@ async def main(phone, last_main_msg=None):
                     full_file_name = await client.download_media(message.media, parent_dir)
                     msg_content = str(message.message)
                     new_file_name = parent_dir + id
-                    add_item_folder(parent_dir, directory_name)
+                    createItemDirectory(parent_dir, directory_name)
 
 
 
