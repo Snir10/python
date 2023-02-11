@@ -22,9 +22,9 @@ def upload_post():
     bot = Bot()
 
     bot.login(username="superhiddenbrands", password="")
-    bot.upload_photo("/Users/user/Desktop/Backup_BIG/Item_464200/464200.png", caption="SUCCESS")
+    bot.upload_photo("/Users/user/Desktop/486000.png", caption="SUCCESS")
 
 
 if __name__ == '__main__':
-    #clean_up()
+    clean_up()
     upload_post()

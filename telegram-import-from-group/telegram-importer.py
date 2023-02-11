@@ -42,9 +42,13 @@ def renameAndMoveFiles(directory_name, ids_obj):
 
     for item in ids_obj:
         try:
-            Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
+            if item[len(item) - 3:] == 'mp4':
+                Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.mp4')
+            else:
+                Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
+
         except:
-            logger.error(f'Cannot move from{handle_fd + item} to {parent_dir + directory_name + item}')
+            logger.error(f'Cannot move from{handle_fd + item} to {parent_dir + directory_name}')
 #Create Folders
 def createItemDirectory(directory_name):
     path = os.path.join(parent_dir, directory_name)
@@ -65,16 +69,25 @@ def createTempImgFolder(param):
             pass
 #Get Msg TXT
 def getTitle(msg_content):
-    title = msg_content.split('-')[0]
+    try:
+        title = msg_content.split('-')[0]
+    except:
+        logger.error(f'problem with title: -> {msg_content}')
+        title = 'error'
     return title
 
-    pass
-def getPrice(msg_content):
-    price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
 
-    # title = msg_content.split('-')[0]
-    price = price.split('\\')[0][2::]
-    price = price.replace('$', '')
+def getPrice(msg_content):
+    try:
+        price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
+        price = price.split('\\')[0][2::]
+        price = price.replace('$', '')
+        #print(price)
+        price = ('%.2f' % float(price))
+        #print(str(price))
+    except:
+        logger.error('price NOT detected')
+        price = ''
     return price+'$'
 def getURL(msg_content):
     try:
@@ -86,7 +99,11 @@ def getURL(msg_content):
 # def setAffiliateLink():
 #     pass
 def getNextURL(url):
-    return requests.get(url).url.split('?')[0]
+    try:
+        x = requests.get(url).url.split('?')[0]
+    except:
+        x = 'no url'
+    return x
 def setAffiliateLink(next_url, no_link_recived_cnt, aliexpress):
 
     if next_url.startswith('https://he.aliexpress.com/item/'):
@@ -100,7 +117,7 @@ def setAffiliateLink(next_url, no_link_recived_cnt, aliexpress):
                 logger.error(resp)
                 no_link_recived_cnt += 1
         else:
-            affiliate_link = 'error'
+            affiliate_link = 'no link from AE'
             logger.error('no promotion link received from aliexpress')
 
     elif next_url.startswith('https://best.aliexpress.com'):
@@ -110,7 +127,7 @@ def setAffiliateLink(next_url, no_link_recived_cnt, aliexpress):
         no_link_recived_cnt += 1
     return [affiliate_link, no_link_recived_cnt]
 #LOG Handling
-def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count, msg_time):
+def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count, msg_time, last_msg):
 
     title = title.strip()[:18]
     title = '{:<15}'.format(title)
@@ -131,6 +148,7 @@ def print_to_log(id, title, price, url, affiliate_link, new_file_name, ids_obj, 
         'Saved-> ' + new_file_name + '\t' +\
         'Image files:' + str(ids_obj) + '\t' +\
         'img count: '+str(img_count)
+         # f'last_msg: {last_msg[:-1]}'
 
 
     if affiliate_link.startswith('https://s.click.ali'):
@@ -222,8 +240,6 @@ def renameImg(full_file_name, id):
         logger.error(f'couldn\'t rename a file:  {full_file_name}')
 def getMsgUploadedDate(message):
     return str(message.date.strftime("%b %d, %H:%M:%S"))
-
-
 def calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt):
     try:
         affLinkCount = main_msg_id_counter - no_link_recived_cnt
@@ -299,7 +315,10 @@ async def main(phone, last_main_msg=None):
                 main_msg_id_counter += 1
                 if os.listdir(handle_fd): #txt message + handling is conatin photos
                     id = str(message.id)
-                    last_id = str(last_main_msg.id)
+                    try:
+                        last_id = str(last_main_msg.id)
+                    except:
+                        logger.warning('no last msg found')
                     directory_name = 'Item_' + last_id
 
 
@@ -324,7 +343,7 @@ async def main(phone, last_main_msg=None):
                                     str(ids_obj), parent_dir, directory_name, last_main_msg.message)
                     new_file_name = ''
                     img_counter += 1
-                    print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter, messageTime)
+                    print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter, messageTime, last_main_msg.message)
                     ids_obj = []
                     full_file_name = await client.download_media(message.media, parent_dir)
                     renameImg(full_file_name, id)
@@ -334,15 +353,14 @@ async def main(phone, last_main_msg=None):
 
                 else: # handle fd empty + txt message = first message
                     logger.info('first message?')
+
+                    ids_obj.append(id)
                     last_main_msg = message
                     img_counter = 0
                     msg_count += 1
-                    directory_name = 'Item_'+id
-                    #first photo and txt
                     full_file_name = await client.download_media(message.media, parent_dir)
-                    createItemDirectory(directory_name)
-                    ids_obj.append(id)
                     renameImg(full_file_name, id)
+                    createItemDirectory('Item_'+id)
 
             offset_id = messages[len(messages) - 1].id
             total_messages = len(all_messages)
