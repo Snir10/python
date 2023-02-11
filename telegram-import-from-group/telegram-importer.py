@@ -91,13 +91,18 @@ def setAffiliateLink(next_url, no_link_recived_cnt, aliexpress):
 
     if next_url.startswith('https://he.aliexpress.com/item/'):
         resp = aliexpress.get_affiliate_links(next_url)
-        logger.info(resp)
-        if resp[0].promotion_link.startswith('https'):
-            affiliate_link = resp[0].promotion_link
+        logger.debug(resp)
+        if hasattr(resp[0], 'promotion_link'):
+            if resp[0].promotion_link.startswith('https'):
+                affiliate_link = resp[0].promotion_link
+            else:
+                affiliate_link = 'Failed to convert Ali Express link\t'
+                logger.error(resp)
+                no_link_recived_cnt += 1
         else:
-            affiliate_link = 'Failed to convert Ali Express link\t\t'
-            logger.error(resp)
-            no_link_recived_cnt +=1
+            affiliate_link = 'error'
+            logger.error('no promotion link received from aliexpress')
+
     elif next_url.startswith('https://best.aliexpress.com'):
             affiliate_link = 'BROKEN: best.aliexpress.com'
     else:
@@ -223,9 +228,10 @@ def calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt):
     try:
         affLinkCount = main_msg_id_counter - no_link_recived_cnt
         x = (affLinkCount / main_msg_id_counter) * 100
-        successRate = str(round(x, 2)) + '%'
+        return str(round(x, 2)) + '%'
     except:
         logger.error('failed to calculate success rate')
+        return 'error'
 
 
 async def main(phone, last_main_msg=None):
@@ -313,14 +319,7 @@ async def main(phone, last_main_msg=None):
 
 
                     #TODO fix calculation
-                    calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt)
-
-                    # try:
-                    #     affLinkCount = main_msg_id_counter - no_link_recived_cnt
-                    #     x = (affLinkCount / main_msg_id_counter) * 100
-                    #     successRate = str(round(x, 2)) + '%'
-                    # except:
-                    #     logger.error('failed to calculate success rate')
+                    successRate = calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt)
                     sendMsgInfoToCSV(messageTime, csvFile, title, price, url, next_url, affiliate_link, last_id,
                                     str(ids_obj), parent_dir, directory_name, last_main_msg.message)
                     new_file_name = ''
