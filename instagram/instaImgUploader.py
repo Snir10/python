@@ -21,8 +21,10 @@ def clean_up():
 def upload_post():
     bot = Bot()
 
-    bot.login(username="superhiddenbrands", password="")
-    bot.upload_photo("/Users/user/Desktop/486000.png", caption="SUCCESS")
+    bot.login(username="superhiddenbrands", password="Alma233490564")
+    bot.upload_photo(["/Users/user/Desktop/482547.png", ], caption="SUCCESS_2")
+    bot.upload_story_photo("/Users/user/Desktop/instagram/482548.png")
+
 
 
 if __name__ == '__main__':

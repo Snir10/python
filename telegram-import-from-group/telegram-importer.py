@@ -284,6 +284,14 @@ async def main(phone, last_main_msg=None):
     while True:
         print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
               main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt,'|| SUCESS_RATE', str(successRate), '\n')
+        logger.info(f'Current Offset ID is: {offset_id}\n'
+                    f'Total Messages is: {total_messages}\n'
+                    f'Message counter: {main_msg_id_counter}\n'
+                    f'Aff links: {affLinkCount}\n'
+                    f'Failed Links: {no_link_recived_cnt}\n'
+                    f'SUCESS_RATE: {successRate}\n'
+
+                    )
         history = await client(GetHistoryRequest(
             peer=my_channel,
             offset_id=offset_id,
