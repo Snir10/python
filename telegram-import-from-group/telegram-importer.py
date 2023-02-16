@@ -5,6 +5,8 @@ import os
 import os.path
 import re
 import csv
+from time import sleep
+
 from aliexpress_api import AliexpressApi, models
 import logging
 import requests
@@ -40,15 +42,16 @@ def renameAndMoveFiles(directory_name, ids_obj):
 
     #TODO - IF ITEM IS *.MP4 - to handle it as video.
 
-    for item in ids_obj:
+    for item in os.listdir(handle_fd):
         try:
             if item[len(item) - 3:] == 'mp4':
-                Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.mp4')
+                logger.debug(f'MOVING: {handle_fd + item} --> {parent_dir + directory_name}/{item}')
+                Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item)
             else:
-                Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item + '.png')
+                Path(handle_fd + item).rename(parent_dir + directory_name + '/' + item)
 
         except:
-            logger.error(f'Cannot move from{handle_fd + item} to {parent_dir + directory_name}')
+            logger.error(f'Cannot move from\t {handle_fd + item} to {parent_dir + directory_name}')
 #Create Folders
 def createItemDirectory(directory_name):
     path = os.path.join(parent_dir, directory_name)
@@ -163,10 +166,11 @@ def print_welcome_csv_importer(csvFileName):
     print(f'###############\t\twill FINISH importing until -> ID:\t\t\t\t##############')
     print('###############\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t##############')
     print(f'##########################################################################################')
+    sleep(0.5)
 def logger_init():
     # init logger
     logger = logging.getLogger('my_module_name')
-    logger.setLevel(level=logging.INFO)
+    logger.setLevel(level=logging.DEBUG)
     LOG_FORMAT = "%(log_color)s %(asctime)s %(levelname)-6s%(reset)s | %(log_color)s%(message)s%(reset)s"
 
     # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(message)s',
@@ -226,16 +230,17 @@ def sendMsgInfoToCSV(messageTime, csvFile, title, price, url, next_url, affiliat
 def renameImg(full_file_name, id):
     try:
         if full_file_name[len(full_file_name) - 3 : ] == 'mp4':
-            logger.info(f'mp4 detected {full_file_name}')
+            logger.debug(f'mp4 detected {full_file_name}')
             try:
                 os.rename(full_file_name, handle_fd + id + '.mp4')
+                sleep(3)
             except:
-                logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
+                logger.info(f'Failed to convert MP4 -> full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
         else:
             try:
-                os.rename(full_file_name, handle_fd + id)
+                os.rename(full_file_name, handle_fd + id + '.png')
             except:
-                logger.info(f'full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
+                logger.info(f'Failed to convert PNG ->full_file_name: {full_file_name}, handle_fd: {handle_fd}, id: {id}')
     except:
         logger.error(f'couldn\'t rename a file:  {full_file_name}')
 def getMsgUploadedDate(message):
@@ -277,21 +282,19 @@ async def main(phone, last_main_msg=None):
 
     print_welcome_csv_importer(csvFile)
     createParentDir()
-    createTempImgFolder('products_handaling')
+    createTempImgFolder('products_handling')
 
     aliexpress = createAliExpressInstance()
 
     while True:
-        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
-              main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt,'|| SUCESS_RATE', str(successRate), '\n')
-        logger.info(f'Current Offset ID is: {offset_id}\n'
-                    f'Total Messages is: {total_messages}\n'
-                    f'Message counter: {main_msg_id_counter}\n'
-                    f'Aff links: {affLinkCount}\n'
-                    f'Failed Links: {no_link_recived_cnt}\n'
-                    f'SUCESS_RATE: {successRate}\n'
-
-                    )
+        # print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
+        #       main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt,'|| SUCESS_RATE', str(successRate), '\n')
+        logger.info(f'Current Offset ID: {offset_id}')
+        logger.info(f'Total Messages Received : {total_messages}')
+        logger.info(f'Message Counter : {main_msg_id_counter}')
+        logger.info(f'Affilate Links : {affLinkCount}')
+        logger.info(f'Failed Links : {no_link_recived_cnt}')
+        logger.info(f'Success Rate : {successRate}\n')
         history = await client(GetHistoryRequest(
             peer=my_channel,
             offset_id=offset_id,
@@ -360,7 +363,7 @@ async def main(phone, last_main_msg=None):
                     last_main_msg = message
 
                 else: # handle fd empty + txt message = first message
-                    logger.info('first message?')
+                    logger.debug('first message?')
 
                     ids_obj.append(id)
                     last_main_msg = message

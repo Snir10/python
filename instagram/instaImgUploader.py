@@ -22,7 +22,7 @@ def upload_post():
     bot = Bot()
 
     bot.login(username="superhiddenbrands", password="Alma233490564")
-    bot.upload_photo(["/Users/user/Desktop/482547.png", ], caption="SUCCESS_2")
+    bot.upload_photo(["/Users/user/Desktop/482547.png"], caption="SUCCESS_2")
     bot.upload_story_photo("/Users/user/Desktop/instagram/482548.png")
 
 
