@@ -65,19 +65,20 @@ def convert_folder_items(parentDir):
     random.shuffle(orderedDir)
 
     return orderedDir
-
-def open_csv(csv_path):
+def open_csv():
     returned_list = []
     with open(csv_path, 'r') as csvfile:
         datareader = csv.reader(csvfile)
-        list_iterator = next(iter(datareader))
+        next(iter(datareader))
+        # list_iterator = next(iter(datareader))
+
 
         for row in datareader:
 
             item = row[0]
             price = row[1]
             link = row[4]
-            folder_name = 'Item_' +row[6]
+            folder_name = 'Item_' + row[6]
             folder_path = src_dir_path + folder_name
             id = row[6]
 
@@ -93,14 +94,14 @@ def open_csv(csv_path):
 
             returned_list.append(row)
         return returned_list
-def sendMediaGroup(chat_id, images, folder_path, caption='new message', reply_to_message_id=None):
+def sendMediaGroup(images, folder_path, caption='new message', reply_to_message_id=None):
         """
         Use this method to send an album of photos. On success, an array of Messages that were sent is returned.
-        :param chat_id: chat id
-        :param images: list of PIL images to send
-        :param caption: caption of image
-        :param reply_to_message_id: If the message is a reply, ID of the original message
-        :return: response with the sent message
+        chat_id: chat id
+        images: list of PIL images to send
+        caption: caption of image
+        reply_to_message_id: If the message is a reply, ID of the original message
+        response with sent message
         """
         files = {}
         media = []
@@ -128,10 +129,7 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
 
 
     title = title.strip()[:20]
-    #make title fixed length
-    title = '{:<15}'.format(title)
-
-    # print statuses to logger
+    title = '{:<15}'.format(title)     #make title fixed length
     if resp.status_code == 200:
         SUCCESS_RATE += 1
         x = f'[ID:{id}] [SUCCESS]' + ' ' + str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
@@ -139,7 +137,6 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
               price + '\t' +\
               link + '\t' +\
               'insta counter='+str(instaCounter)
-
         #print(x)
         logger.info(x)
 
@@ -164,7 +161,7 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
               resp.text
 
         logger.error(x)
-    else:
+    else: # NOT 200 or 429
         ERROR_RATE += 1
         x = f'[ID:{id}] '+'[FAILED] ' + \
             str(ERROR_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) +\
@@ -175,7 +172,7 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
             'status:' + str(resp.status_code) +\
              resp.text
 
-        logger.error(x)
+        logger.error(x) # NOT 200
 
     return SUCCESS_RATE, ERROR_RATE
 def saveIdToCFG(id):
@@ -185,15 +182,14 @@ def saveIdToCFG(id):
     cfgfile = open('config_files/uploader_config.ini', 'w')
     config.write(cfgfile, space_around_delimiters=False)  # use flag in case case you need to avoid white space.
     cfgfile.close()
-
-def get_item(details):
-    title = details[1]
-    price = str(details[2])
-    link = details[5]
-    folder_path = src_dir_path + 'Item_' + details[6]
+def get_item(line):
+    title = line[1]
+    price = str(line[2])
+    link = line[5]
+    folder_path = src_dir_path + 'Item_' + line[6]
     images = os.listdir(folder_path)
 
-    id = details[6]
+    id = line[6]
 
     images_path_list = []
     for image in images:
@@ -212,7 +208,6 @@ def print_welcome_csv_uploader(csv_path, len):
     print('###############\t\tWelcome to CSV Uploader\t\t\t\t\t\t\t\t\t##############')
     print(f'###############\t\tCSV file =>\t{csv_path[11:]}\t\t\t\t##############')
     print(f'###############\t\tItems Count =>\t{len}\t\t\t\t\t\t\t\t\t##############')
-
     print('##########################################################################################\n')
 def logger_init():
     log = logging.getLogger('my_module_name')
@@ -236,6 +231,22 @@ def uploadInstagramAlbum(folder_path, text):
     convertedAlbumPathList = convert_folder_items(folder_path)
     # resp = bot.album_upload(convertedAlbumPathList, caption=text, to_story=True)
     # logger.info(resp)
+
+
+def uploadInstagramItem(folder_path, instaCounter):
+
+
+    try:
+        text_2 = 'New in Stock'
+        uploadInstagramAlbum(folder_path, text_2)
+        logger.info('post has successfully uploaded to instagram')
+        instaCounter += 1
+    except:
+        logger.warning('error -> no instagram post')
+
+    return instaCounter
+
+
 
 def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCounter):
 
@@ -264,7 +275,6 @@ def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCount
                 logger.debug('no valid price')
 
         price = str(price) + dollar
-        # caption text to send
         text = title[:20] + '\t|\t' +  \
                price + '\n' + \
                '\nPlz Follow Images Instructions ☝🏻 \n' + \
@@ -273,11 +283,11 @@ def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCount
                #str(SUCCESS_RATE) + '/' + str(SUCCESS_RATE + ERROR_RATE)
         logger.debug(f'sending media group to telegram')
 
-        resp = sendMediaGroup(chat_id=chat_id, images=images_path_list, folder_path=folder_path, caption=text)
+        resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=text)
         if resp.status_code == 429:
             logger.debug(f'\tID:{msg_id} [FAILED] with 429 -> RETRYING')
             sleep(10)
-            resp = sendMediaGroup(chat_id=chat_id, images=images_path_list, folder_path=folder_path, caption=text)
+            resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=text)
         #
         # try:
         #     text_2 = 'New in Stock'
@@ -290,6 +300,9 @@ def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCount
         z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, msg_id, title, price, link, instaCounter)
         SUCCESS_RATE = z[0]
         ERROR_RATE = z[1]
+        successRate = 'snir'
+
+
 
 
 
@@ -304,11 +317,10 @@ def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCount
         logger.warning(x)
 
     return [SUCCESS_RATE, ERROR_RATE, instaCounter]
-def upload_product_by_id(msg_id, SUCCESS_RATE, ERROR_RATE, instaCounter):
+def upload_product_by_id(msgID, SUCCESS_RATE, ERROR_RATE, instaCounter):
     with open(csv_path) as csv_file:
         for line in csv.DictReader(csv_file):
-
-            if line is not None and line['id'] == msg_id:
+            if line is not None and line['id'] == msgID:
                 if line['affiliate_link'][:3] == 'htt':
                     values = list(line.values())
                     csvLine = get_item(values)
@@ -318,11 +330,12 @@ def upload_product_by_id(msg_id, SUCCESS_RATE, ERROR_RATE, instaCounter):
                     instaCounter = rates[2]
 
                 else:
-                    # title = line[title]
-                    logger.warning(f'skipping no link line')
+                    title = line['title']
+                    logger.warning(f'skipping no link line {title}')
+
 
     return [SUCCESS_RATE, ERROR_RATE, instaCounter]
-def get_ids_from_csv(csv_path):
+def get_ids_from_csv():
     with open(csv_path) as csv_file:
         list_of_ids = []
         for line in csv.DictReader(csv_file):
@@ -347,8 +360,9 @@ timeout = c['Telegram']['timeout']
 # username = c['Telegram']['instagram_acc']
 # password = c['Telegram']['instagram_pass']
 # bot = Client()
+# bot.login(username=username, password=password)
+# bot = Client()
 # bot.login(username="superhiddenbrands", password="Alma233490564")
-
 
 
 
@@ -357,12 +371,12 @@ successRate = 0
 errorRate = 0
 
 logger = logger_init()
-details = open_csv(csv_path)
+details = open_csv()
 print_welcome_csv_uploader(csv_path, len(details))
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-list_of_ids = get_ids_from_csv(csv_path)
+list_of_ids = get_ids_from_csv()
 instaCounter = 0
 for msg_id in list_of_ids:
     rates = upload_product_by_id(msg_id, successRate, errorRate, instaCounter)
@@ -370,10 +384,11 @@ for msg_id in list_of_ids:
     errorRate = rates[1]
     instaCounter = rates[2]
 
-
-
-
-
-
 '''     FINISH      '''
 logger.info('finished')
+
+
+
+
+# main()
+
