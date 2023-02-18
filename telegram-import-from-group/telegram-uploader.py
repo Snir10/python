@@ -125,8 +125,6 @@ def sendMediaGroup(images, folder_path, caption='new message', reply_to_message_
         sleep(int(timeout))
 
         return resp
-
-
 def printStatus200(id, title, price, link, ERROR_RATE, SUCCESS_RATE, instaCounter):
     x = f'[ID:{id}] [SUCCESS]' + ' ' + str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
           title + '\t' +\
@@ -155,8 +153,6 @@ def printStatusUnknown(id, title, price, link, ERROR_RATE, SUCCESS_RATE, resp):
          resp.text
 
     logger.error(x) # NOT 200
-
-
 def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link, instaCounter):
 
 
@@ -259,106 +255,72 @@ def logger_init():
     log.addHandler(fh)
 
     return log
-def uploadInstagramAlbum(folder_path, text):
-    logger.debug(f'starting upload to instagram')
-
-    convertedAlbumPathList = convert_folder_items(folder_path)
-    # resp = bot.album_upload(convertedAlbumPathList, caption=text, to_story=True)
-    # logger.info(resp)
-
-
 def uploadInstagramItem(folder_path, instaCounter):
-
-
     try:
         text_2 = 'New in Stock'
-        uploadInstagramAlbum(folder_path, text_2)
+        logger.debug(f'starting upload to instagram')
+        convertedAlbumPathList = convert_folder_items(folder_path)
+        # resp = bot.album_upload(convertedAlbumPathList, caption=text_2, to_story=True)
+        # logger.info(resp)
         logger.info('post has successfully uploaded to instagram')
         instaCounter += 1
     except:
         logger.warning('error -> no instagram post')
-
     return instaCounter
 
 
+def createMsgTXT(title, price, link):
+    return title[:20] + '\t|\t' + \
+             price + '\n' + \
+             '\nPlz Follow Images Instructions ☝🏻 \n' + \
+             '\n\t🫴\t' + \
+             link + '\n'
+
 
 def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCounter):
-    title = csvLine[1]
-    price = csvLine[2]
-    link = csvLine[3]
-    folder_path = csvLine[4]
-    images_path_list = csvLine[5]
-    msg_id = csvLine[0]
-    x = '️🧡🧡💛💛💚💚🤍🖤💜💙🤎❤️❤️❤️‍🔥️‍🔥💓💓💞💞❣️❣️💗💘💝'
-    dollar = '💲'
-    vi = '✔'
-    title += ' ' + random.choice(x)
-
-    if link.__contains__('click.aliexpress'):
-        # manipulate price to pure float with 2 decimal digits
-        if price.__contains__('$'):
-            try:
-                price = price.strip().replace('$', '')
-                price = "{:.2f}".format(float(price))
-            except:
-                logger.debug('no valid price')
-
-        price = str(price) + dollar
-        text = title[:20] + '\t|\t' +  \
-               price + '\n' + \
-               '\nPlz Follow Images Instructions ☝🏻 \n' + \
-               '\n\t🫴\t' + \
-               link + '\n'
-        logger.debug(f'sending media group to telegram')
-
-        resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=text)
-        if resp.status_code == 429:
-            logger.debug(f'ID:{msg_id} [FAILED] with 429 -> RETRYING')
-            sleep(int(timeout))
-            resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=text)
-        uploadInstagramItem(folder_path, instaCounter)
-
-        z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, msg_id, title, price, link, instaCounter)
-        SUCCESS_RATE = z[0]
-        ERROR_RATE = z[1]
-
-
-
-
-
-
-    else:
-        ERROR_RATE += 1
-        x = f'[ID:{msg_id}] [FAILED]' + str(ERROR_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' + \
-            title + '\t' + \
-            price + '\t' + \
-            link + '\t' +\
-            'link isnt containing s.click' + '\t\t'
-
-        logger.warning(x)
+    # title = csvLine[1]
+    # price = csvLine[2]
+    # link = csvLine[3]
+    # folder_path = csvLine[4]
+    # images_path_list = csvLine[5]
+    # msg_id = csvLine[0]
+    # x = '️🧡🧡💛💛💚💚🤍🖤💜💙🤎❤️❤️❤️‍🔥️‍🔥💓💓💞💞❣️❣️💗💘💝'
+    # dollar = '💲'
+    # vi = '✔'
+    # title += ' ' + random.choice(x)
+    # if link.__contains__('click.aliexpress'):
+    #     # manipulate price to pure float with 2 decimal digits
+    #     if price.__contains__('$'):
+    #         try:
+    #             price = price.strip().replace('$', '')
+    #             price = "{:.2f}".format(float(price))
+    #         except:
+    #             logger.debug('no valid price')
+    #     price = str(price) + dollar
+    #     msgTxt = createMsgTXT(title, price, link)
+    #
+    #     logger.debug(f'sending media group to telegram')
+    #     resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
+    #     if resp.status_code == 429:
+    #         logger.debug(f'ID:{msg_id} [FAILED] with 429 -> RETRYING')
+    #         sleep(int(timeout))
+    #         resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
+    #     # uploadInstagramItem(folder_path, instaCounter)
+    #     z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, msg_id, title, price, link, instaCounter)
+    #     SUCCESS_RATE = z[0]
+    #     ERROR_RATE = z[1]
+    # else:
+    #     ERROR_RATE += 1
+    #     x = f'[ID:{msg_id}] [FAILED]' + str(ERROR_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' + \
+    #         title + '\t' + \
+    #         price + '\t' + \
+    #         link + '\t' +\
+    #         'link isnt containing s.click' + '\t\t'
+    #
+    #     logger.warning(x)
 
     return [SUCCESS_RATE, ERROR_RATE, instaCounter]
-def upload_product_by_id(msgID, SUCCESS_RATE, ERROR_RATE, instaCounter):
-    csvLines = []
-    with open(csv_path) as csv_file:
-        for line in csv.DictReader(csv_file):
-            if line is not None and line['id'] == msgID:
-                if line['affiliate_link'][:3] == 'htt':
-                    values = list(line.values())
-                    csvLine = get_item(values)
-                    csvLine.append(csvLines)
 
-                    rates = manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCounter)
-                    SUCCESS_RATE = rates[0]
-                    ERROR_RATE = rates[1]
-                    instaCounter = rates[2]
-
-                else:
-                    title = line['title']
-                    logger.warning(f'skipping no link line {title}')
-
-
-    return [SUCCESS_RATE, ERROR_RATE, instaCounter]
     # return csvLines
 def get_ids_from_csv():
     with open(csv_path) as csv_file:
@@ -383,10 +345,10 @@ timeout = c['Telegram']['timeout']
 
 #TODO - get Cred from Conf
 
-username = c['Telegram']['instagram_acc']
-password = c['Telegram']['instagram_pass']
-bot = Client()
-bot.login(username=username, password=password)
+# username = c['Telegram']['instagram_acc']
+# password = c['Telegram']['instagram_pass']
+# bot = Client()
+# bot.login(username=username, password=password)
 
 successRate = 0
 errorRate = 0
@@ -403,19 +365,73 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 list_of_ids = get_ids_from_csv()
 
 for msg_id in list_of_ids:
-    rates = upload_product_by_id(msg_id, successRate, errorRate, instaCounter)
+    # rates = upload_product_by_id(msg_id, successRate, errorRate, instaCounter)
+    #
+    csvLines = []
+    with open(csv_path) as csv_file:
+        for line in csv.DictReader(csv_file):
+            if line is not None and line['id'] == msg_id:
+                if line['affiliate_link'][:3] == 'htt':
+                    values = list(line.values())
+                    csvLine = get_item(values)
+                    csvLine.append(csvLines)
+
+                    title = csvLine[1]
+                    price = csvLine[2]
+                    link = csvLine[3]
+                    folder_path = csvLine[4]
+                    images_path_list = csvLine[5]
+                    msg_id = csvLine[0]
+                    x = '️🧡🧡💛💛💚💚🤍🖤💜💙🤎❤️❤️❤️‍🔥️‍🔥💓💓💞💞❣️❣️💗💘💝'
+                    dollar = '💲'
+                    vi = '✔'
+                    title += ' ' + random.choice(x)
+                    if link.__contains__('click.aliexpress'):
+                        # manipulate price to pure float with 2 decimal digits
+                        if price.__contains__('$'):
+                            try:
+                                price = price.strip().replace('$', '')
+                                price = "{:.2f}".format(float(price))
+                            except:
+                                logger.debug('no valid price')
+                        price = str(price) + dollar
+                        msgTxt = createMsgTXT(title, price, link)
+
+                        logger.debug(f'sending media group to telegram')
+                        resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
+                        if resp.status_code == 429:
+                            logger.debug(f'ID:{msg_id} [FAILED] with 429 -> RETRYING')
+                            sleep(int(timeout))
+                            resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
+                        # uploadInstagramItem(folder_path, instaCounter)
+                        z = print_upload_response(resp, successRate, errorRate, msg_id, title, price, link,
+                                                  instaCounter)
+                        SUCCESS_RATE = z[0]
+                        ERROR_RATE = z[1]
+                    else:
+                        ERROR_RATE += 1
+                        x = f'[ID:{msg_id}] [FAILED]' + str(ERROR_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' + \
+                            title + '\t' + \
+                            price + '\t' + \
+                            link + '\t' + \
+                            'link isnt containing s.click' + '\t\t'
+
+                        logger.warning(x)
+
+                    # rates = manipulate_msg_text_for_upload(csvLine, successRate, errorRate, instaCounter)
+                    # successRate = rates[0]
+                    # errorRate = rates[1]
+                    # instaCounter = rates[2]
+
+                else:
+                    title = line['title']
+                    logger.warning(f'skipping no link line {title}')
 
 
-
-    successRate = rates[0]
-    errorRate = rates[1]
-    instaCounter = rates[2]
+    successRate = SUCCESS_RATE
+    errorRate = ERROR_RATE
+    instaCounter = instaCounter
 
 '''     FINISH      '''
 logger.info('finished')
-
-
-
-
-# main()
 
