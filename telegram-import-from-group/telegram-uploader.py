@@ -153,7 +153,6 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
         # config.write(cfgfile, space_around_delimiters=False)  # use flag in case case you need to avoid white space.
         # cfgfile.close()
         ##########################
-
     elif resp.status_code == 429:
         ERROR_RATE += 1
         x = f'[ID:{id}] [FAILED]' +\
@@ -167,8 +166,8 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
         logger.error(x)
     else:
         ERROR_RATE += 1
-        x = f'[ID:{id}]'+'[FAILED] ' + \
-            str(ERROR_RATE) + ' / ' + str(ERROR_RATE + SUCCESS_RATE) +\
+        x = f'[ID:{id}] '+'[FAILED] ' + \
+            str(ERROR_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) +\
             title + '\t' +\
             price + '\t' +\
             link + '\t' + \
@@ -198,7 +197,8 @@ def get_item(details):
 
     images_path_list = []
     for image in images:
-        images_path_list.append(folder_path + '/' + image)
+        if image[-3:] == 'jpg':
+            images_path_list.append(folder_path + '/' + image)
 
 
     return [id, title, price, link, folder_path, images_path_list]
@@ -234,8 +234,8 @@ def uploadInstagramAlbum(folder_path, text):
     logger.debug(f'starting upload to instagram')
 
     convertedAlbumPathList = convert_folder_items(folder_path)
-    resp = bot.album_upload(convertedAlbumPathList, caption=text, to_story=True)
-    logger.info(resp)
+    # resp = bot.album_upload(convertedAlbumPathList, caption=text, to_story=True)
+    # logger.info(resp)
 
 def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCounter):
 
@@ -278,14 +278,14 @@ def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCount
             logger.debug(f'\tID:{msg_id} [FAILED] with 429 -> RETRYING')
             sleep(10)
             resp = sendMediaGroup(chat_id=chat_id, images=images_path_list, folder_path=folder_path, caption=text)
-
-        try:
-            text_2 = 'New in Stock'
-            uploadInstagramAlbum(folder_path, text_2)
-            logger.info('post has successfully uploaded to instagram')
-            instaCounter += 1
-        except:
-            logger.warning('error -> no instagram post')
+        #
+        # try:
+        #     text_2 = 'New in Stock'
+        #     uploadInstagramAlbum(folder_path, text_2)
+        #     logger.info('post has successfully uploaded to instagram')
+        #     instaCounter += 1
+        # except:
+        #     logger.warning('error -> no instagram post')
 
         z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, msg_id, title, price, link, instaCounter)
         SUCCESS_RATE = z[0]
@@ -343,10 +343,11 @@ timeout = c['Telegram']['timeout']
 
 
 #TODO - get Cred from Conf
-username = c['Telegram']['instagram_acc']
-password = c['Telegram']['instagram_pass']
-bot = Client()
-bot.login(username="superhiddenbrands", password="Alma233490564")
+
+# username = c['Telegram']['instagram_acc']
+# password = c['Telegram']['instagram_pass']
+# bot = Client()
+# bot.login(username="superhiddenbrands", password="Alma233490564")
 
 
 
