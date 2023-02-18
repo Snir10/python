@@ -89,7 +89,7 @@ def open_csv():
                 try:
                     images_list.append(folder_path+'/'+img)
                 except:
-                    print('coould not open this file --> '+'folder_path'+'/'+img)
+                    print('could not open this file --> '+'folder_path'+'/'+img)
                     pass
 
             returned_list.append(row)
@@ -125,20 +125,52 @@ def sendMediaGroup(images, folder_path, caption='new message', reply_to_message_
         sleep(int(timeout))
 
         return resp
+
+
+def printStatus200(id, title, price, link, ERROR_RATE, SUCCESS_RATE, instaCounter):
+    x = f'[ID:{id}] [SUCCESS]' + ' ' + str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
+          title + '\t' +\
+          price + '\t' +\
+          link + '\t' +\
+          'insta counter='+str(instaCounter)
+    logger.info(x)
+def printStatus429(id, title, price, link, ERROR_RATE, SUCCESS_RATE, resp):
+    x = f'[ID:{id}] [FAILED]' + \
+        str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' + \
+        title + '\t' + \
+        price + '\t' + \
+        link + \
+        ' ->ERROR CODE: 429 - please Retry send ID]' + \
+        resp.text
+
+    logger.error(x)
+def printStatusUnknown(id, title, price, link, ERROR_RATE, SUCCESS_RATE, resp):
+    x = f'[ID:{id}] '+'[FAILED] ' + \
+        str(ERROR_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) +\
+        title + '\t' +\
+        price + '\t' +\
+        link + '\t' + \
+        'ERROR -> ' +\
+        'status:' + str(resp.status_code) +\
+         resp.text
+
+    logger.error(x) # NOT 200
+
+
 def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link, instaCounter):
 
 
     title = title.strip()[:20]
-    title = '{:<15}'.format(title)     #make title fixed length
+    title = '{:<15}'.format(title)     #make title in fixed length
     if resp.status_code == 200:
         SUCCESS_RATE += 1
-        x = f'[ID:{id}] [SUCCESS]' + ' ' + str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
-              title + '\t' +\
-              price + '\t' +\
-              link + '\t' +\
-              'insta counter='+str(instaCounter)
-        #print(x)
-        logger.info(x)
+        printStatus200(id, title, price, link, ERROR_RATE, SUCCESS_RATE, instaCounter)
+        # x = f'[ID:{id}] [SUCCESS]' + ' ' + str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
+        #       title + '\t' +\
+        #       price + '\t' +\
+        #       link + '\t' +\
+        #       'insta counter='+str(instaCounter)
+        # logger.info(x)
 
 
         #TODO - save id to config #####
@@ -152,27 +184,29 @@ def print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, id, title, price, link
         ##########################
     elif resp.status_code == 429:
         ERROR_RATE += 1
-        x = f'[ID:{id}] [FAILED]' +\
-            str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
-              title + '\t' +\
-              price + '\t' +\
-              link + \
-              ' ->ERROR CODE: 429 - please Retry send ID]' +\
-              resp.text
-
-        logger.error(x)
+        printStatus429(id, title, price, link, ERROR_RATE, SUCCESS_RATE, resp)
+        # x = f'[ID:{id}] [FAILED]' +\
+        #     str(SUCCESS_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) + '\t' +\
+        #       title + '\t' +\
+        #       price + '\t' +\
+        #       link + \
+        #       ' ->ERROR CODE: 429 - please Retry send ID]' +\
+        #       resp.text
+        #
+        # logger.error(x)
     else: # NOT 200 or 429
         ERROR_RATE += 1
-        x = f'[ID:{id}] '+'[FAILED] ' + \
-            str(ERROR_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) +\
-            title + '\t' +\
-            price + '\t' +\
-            link + '\t' + \
-            'ERROR -> ' +\
-            'status:' + str(resp.status_code) +\
-             resp.text
-
-        logger.error(x) # NOT 200
+        printStatusUnknown(id, title, price, link, ERROR_RATE, SUCCESS_RATE, resp)
+        # x = f'[ID:{id}] '+'[FAILED] ' + \
+        #     str(ERROR_RATE) + '/' + str(ERROR_RATE + SUCCESS_RATE) +\
+        #     title + '\t' +\
+        #     price + '\t' +\
+        #     link + '\t' + \
+        #     'ERROR -> ' +\
+        #     'status:' + str(resp.status_code) +\
+        #      resp.text
+        #
+        # logger.error(x) # NOT 200
 
     return SUCCESS_RATE, ERROR_RATE
 def saveIdToCFG(id):
@@ -249,17 +283,12 @@ def uploadInstagramItem(folder_path, instaCounter):
 
 
 def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCounter):
-
-
-
-
     title = csvLine[1]
     price = csvLine[2]
     link = csvLine[3]
     folder_path = csvLine[4]
     images_path_list = csvLine[5]
     msg_id = csvLine[0]
-
     x = '️🧡🧡💛💛💚💚🤍🖤💜💙🤎❤️❤️❤️‍🔥️‍🔥💓💓💞💞❣️❣️💗💘💝'
     dollar = '💲'
     vi = '✔'
@@ -280,27 +309,19 @@ def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCount
                '\nPlz Follow Images Instructions ☝🏻 \n' + \
                '\n\t🫴\t' + \
                link + '\n'
-               #str(SUCCESS_RATE) + '/' + str(SUCCESS_RATE + ERROR_RATE)
         logger.debug(f'sending media group to telegram')
 
         resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=text)
         if resp.status_code == 429:
-            logger.debug(f'\tID:{msg_id} [FAILED] with 429 -> RETRYING')
-            sleep(10)
+            logger.debug(f'ID:{msg_id} [FAILED] with 429 -> RETRYING')
+            sleep(int(timeout))
             resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=text)
-        #
-        # try:
-        #     text_2 = 'New in Stock'
-        #     uploadInstagramAlbum(folder_path, text_2)
-        #     logger.info('post has successfully uploaded to instagram')
-        #     instaCounter += 1
-        # except:
-        #     logger.warning('error -> no instagram post')
+        uploadInstagramItem(folder_path, instaCounter)
 
         z = print_upload_response(resp, SUCCESS_RATE, ERROR_RATE, msg_id, title, price, link, instaCounter)
         SUCCESS_RATE = z[0]
         ERROR_RATE = z[1]
-        successRate = 'snir'
+
 
 
 
@@ -318,12 +339,15 @@ def manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCount
 
     return [SUCCESS_RATE, ERROR_RATE, instaCounter]
 def upload_product_by_id(msgID, SUCCESS_RATE, ERROR_RATE, instaCounter):
+    csvLines = []
     with open(csv_path) as csv_file:
         for line in csv.DictReader(csv_file):
             if line is not None and line['id'] == msgID:
                 if line['affiliate_link'][:3] == 'htt':
                     values = list(line.values())
                     csvLine = get_item(values)
+                    csvLine.append(csvLines)
+
                     rates = manipulate_msg_text_for_upload(csvLine, SUCCESS_RATE, ERROR_RATE, instaCounter)
                     SUCCESS_RATE = rates[0]
                     ERROR_RATE = rates[1]
@@ -335,11 +359,13 @@ def upload_product_by_id(msgID, SUCCESS_RATE, ERROR_RATE, instaCounter):
 
 
     return [SUCCESS_RATE, ERROR_RATE, instaCounter]
+    # return csvLines
 def get_ids_from_csv():
     with open(csv_path) as csv_file:
         list_of_ids = []
         for line in csv.DictReader(csv_file):
-            list_of_ids.append(str(line['id']))
+            if line['affiliate_link'].__contains__('click.aliexpress'):
+                list_of_ids.append(str(line['id']))
     return list_of_ids
 
 
@@ -357,18 +383,14 @@ timeout = c['Telegram']['timeout']
 
 #TODO - get Cred from Conf
 
-# username = c['Telegram']['instagram_acc']
-# password = c['Telegram']['instagram_pass']
-# bot = Client()
-# bot.login(username=username, password=password)
-# bot = Client()
-# bot.login(username="superhiddenbrands", password="Alma233490564")
-
-
-
+username = c['Telegram']['instagram_acc']
+password = c['Telegram']['instagram_pass']
+bot = Client()
+bot.login(username=username, password=password)
 
 successRate = 0
 errorRate = 0
+instaCounter = 0
 
 logger = logger_init()
 details = open_csv()
@@ -376,10 +398,15 @@ print_welcome_csv_uploader(csv_path, len(details))
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
 list_of_ids = get_ids_from_csv()
-instaCounter = 0
+
 for msg_id in list_of_ids:
     rates = upload_product_by_id(msg_id, successRate, errorRate, instaCounter)
+
+
+
     successRate = rates[0]
     errorRate = rates[1]
     instaCounter = rates[2]
