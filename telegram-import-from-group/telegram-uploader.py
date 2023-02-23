@@ -183,7 +183,7 @@ def get_item(line):
 
     images_path_list = []
     for image in images:
-        if image[-3:] == 'jpg':
+        if image[-3:] == 'png':
             images_path_list.append(folder_path + '/' + image)
         elif image[-3:] == 'mp4':
             images_path_list.append(folder_path + '/' + image)
@@ -196,10 +196,12 @@ def validate_last_id(id):
         sleep(10)
         exit(0)
 def print_welcome_csv_uploader(csv_path, len):
+    now = str(datetime.today())[:-7]
     print('##########################################################################################')
     print('###############\t\tWelcome to CSV Uploader\t\t\t\t\t\t\t\t\t##############')
     print(f'###############\t\tCSV file =>\t{csv_path[11:]}\t\t\t\t##############')
-    print(f'###############\t\tItems Count =>\t{len}\t\t\t\t\t\t\t\t\t##############')
+    print(f'###############\t\tItems Count =>\t{len}\t\t\t\t\t\t\t\t\t\t##############')
+    print(f'###############\t\tStarted: {now}\t\t\t\t\t\t\t##############')
     print('##########################################################################################\n')
 def logger_init():
     log = logging.getLogger('my_module_name')
@@ -257,11 +259,10 @@ chat_id = c['Telegram']['chat_id']
 src_dir_path = c['Telegram']['src_dir_path']
 csv_path = c['Telegram']['products_csv_path']
 timeout = c['Telegram']['timeout']
-username = c['Telegram']['instagram_acc']
-password = c['Telegram']['instagram_pass']
+#
 
-bot = Client()
-bot.login(username=username, password=password)
+
+
 
 successRate = 0
 errorRate = 0
@@ -311,7 +312,7 @@ for msg_id in list_of_ids:
 
 
                         #TODO - instagram
-                        instaCounter = uploadInstagramItem(folder_path, instaCounter)
+                        # instaCounter = uploadInstagramItem(folder_path, instaCounter)
 
 
                         # TODO - prints
