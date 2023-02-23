@@ -202,6 +202,8 @@ def print_welcome_csv_uploader(csv_path, len):
     print(f'###############\t\tCSV file =>\t{csv_path[11:]}\t\t\t\t##############')
     print(f'###############\t\tItems Count =>\t{len}\t\t\t\t\t\t\t\t\t\t##############')
     print(f'###############\t\tStarted: {now}\t\t\t\t\t\t\t##############')
+    print(f'###############\t\tInstagram Flag: {instaFlag}\t\t\t\t\t\t\t##############')
+
     print('##########################################################################################\n')
 def logger_init():
     log = logging.getLogger('my_module_name')
@@ -261,6 +263,14 @@ csv_path = c['Telegram']['products_csv_path']
 timeout = c['Telegram']['timeout']
 #
 
+username = c['Telegram']['instagram_acc']
+password = c['Telegram']['instagram_pass']
+instaFlag = c['Telegram']['uploadToInstagram']
+instaFlag = bool(instaFlag)
+
+if instaFlag:
+    bot = Client()
+    bot.login(username=username, password=password)
 
 
 
@@ -310,9 +320,8 @@ for msg_id in list_of_ids:
                         logger.debug(f'sending media group to telegram')
                         resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
 
-
-                        #TODO - instagram
-                        # instaCounter = uploadInstagramItem(folder_path, instaCounter)
+                        if instaFlag:
+                            instaCounter = uploadInstagramItem(folder_path, instaCounter)
 
 
                         # TODO - prints
