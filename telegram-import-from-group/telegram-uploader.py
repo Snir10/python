@@ -1,3 +1,4 @@
+import re
 from io import BytesIO
 import urllib3
 from datetime import datetime
@@ -13,7 +14,14 @@ import pathlib
 from time import sleep
 from PIL import Image
 from instagrapi import Client
+from time import sleep
+import json
 
+import bs4
+import csv
+from urllib.request import urlopen as uReq
+
+from numpy.core.defchararray import isnumeric
 
 ''' ##### Main Functions #####
 
@@ -136,11 +144,13 @@ def sendMediaGroup(images, folder_path, caption='new message', reply_to_message_
             resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
         return resp
 
-def printStatus200(id, title, price, link):
+def printStatus200(id, title, price, link, orderCount):
+    orderCount = str(orderCount)
     x = f'[ID:{id}] [SUCCESS]' + ' ' + str(successRate) + '/' + str(errorRate + successRate) + '\t' +\
           title + '\t' +\
           price + '\t' +\
-          link + '\t' +\
+          link + '\t' + \
+          orderCount + '\t' + \
           'insta counter='+str(instaCounter)
     logger.info(x)
 def printStatus429(id, title, price, link, resp):
@@ -202,12 +212,16 @@ def print_welcome_csv_uploader(csv_path, len):
     print(f'###############\t\tCSV file =>\t{csv_path[11:]}\t\t\t\t##############')
     print(f'###############\t\tItems Count =>\t{len}\t\t\t\t\t\t\t\t\t\t##############')
     print(f'###############\t\tStarted: {now}\t\t\t\t\t\t\t##############')
-    print(f'###############\t\tInstagram Flag: {instaFlag}\t\t\t\t\t\t\t##############')
+    print(f'###############\t\tInstagram Flag: {instaFlag}\t\t\t\t\t\t\t\t\t##############')
 
     print('##########################################################################################\n')
 def logger_init():
     log = logging.getLogger('my_module_name')
-    log.setLevel(level=logging.INFO)
+    if logLevel == 'DEBUG':
+        log.setLevel(level=logging.DEBUG)
+    else:
+        log.setLevel(level=logging.INFO)
+
     LOG_FORMAT = "%(log_color)s %(asctime)s %(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
 
     fh = logging.StreamHandler()
@@ -235,12 +249,26 @@ def uploadInstagramItem(folder_path, instaCounter):
     return instaCounter
 
 
-def createMsgTXT(title, price, link):
-    return title[:20] + '\t|\t' + \
-             price + '\n' + \
-             '\nPlz Follow Images Instructions ☝🏻 \n' + \
-             '\n\t🫴\t' + \
-             link + '\n'
+def createMsgTXT(title, price, link, count):
+    count = str(count)
+    logger.debug(f'creating a msg with: {title} {price} {link} {count}')
+    if count != 'None':
+        x = title[:20] + '\t|\t' + \
+                 price + '\n\n' + \
+                 count + '\n' + \
+                 '\nPlz Follow Images Instructions ☝🏻 \n' + \
+                 '\n\t🫴\t' + \
+                 link + '\n'
+
+    else:
+        x = title[:20] + '\t|\t' + \
+                 price + '\n' + \
+                 '\nPlz Follow Images Instructions ☝🏻 \n' + \
+                 '\n\t🫴\t' + \
+                 link + '\n'
+    return x
+
+
     # return csvLines
 def get_ids_from_csv():
     with open(csv_path) as csv_file:
@@ -266,9 +294,11 @@ timeout = c['Telegram']['timeout']
 username = c['Telegram']['instagram_acc']
 password = c['Telegram']['instagram_pass']
 instaFlag = c['Telegram']['uploadToInstagram']
-instaFlag = bool(instaFlag)
+logLevel = c['Telegram']['log_level']
 
-if instaFlag:
+# instaFlag = bool(instaFlag)
+
+if instaFlag == 'True':
     bot = Client()
     bot.login(username=username, password=password)
 
@@ -283,6 +313,72 @@ details = open_csv()
 print_welcome_csv_uploader(csv_path, len(details))
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 list_of_ids = get_ids_from_csv()
+
+
+def printLingOrdersCount(my_url):
+    # my_url = 'https://www.aliexpress.com/item/1005003474228451.html?spm=a2g0o.productlist.main.3.596axctbxctbGQ&algo_pvid=f11df15d-f5cf-43d8-8a47-7d83668ec173&algo_exp_id=f11df15d-f5cf-43d8-8a47-7d83668ec173-1&pdp_ext_f=%7B%22sku_id%22%3A%2212000025949310204%22%7D&pdp_npi=3%40dis%21USD%2114.53%217.99%21%21%21%21%21%40211bf3f816770957337077616d0761%2112000025949310204%21sea%21IL%21139655206&curPageLogUid=0cVtDVdM2LoK'
+    # my_url = 'https://he.aliexpress.com/item/1005005242644512.html'
+
+    # had to split the above link because it did not fit on one line
+
+    uClient = uReq(my_url)
+    page_html = uClient.read()
+    uClient.close()
+    # page_soup = soup(page_html, "html.parser")
+    page = bs4.BeautifulSoup(page_html, "html.parser")
+    # print(page.text)
+    count = 0
+    scripts = page.find_all('script')
+    for script in scripts:
+        txt = script.text
+        if txt.__contains__('tradeCount'):
+            logger.debug('tradeCount exists! we can print orders')
+    sleep(1)
+
+    string = scripts[16]
+    sleep(1)
+
+    # x = str(string)[-1056:-1051] this balance concate returns Orders: ":12,
+
+
+    x = str(string)[-1056:-1051]
+    # y = int(x[1] + x[2] + x[3] + x[4])
+
+    y = x
+    try:
+        y = y.replace(':', '')
+    except:
+        logger.debug('no :')
+    try:
+        y = y.replace(',', '')
+    except:
+        logger.debug('no ,')
+    try:
+        y = y.replace('"', '')
+    except:
+        logger.debug('no "')
+    try:
+        y = y.replace('t', '')
+    except:
+        logger.debug('no t')
+    try:
+        y = y.replace('n', '')
+    except:
+        logger.debug('no t')
+
+    x = y
+
+    if isnumeric(x):
+        logger.debug(f'numeric orders count detected: {x}')
+        return f'Orders: {x}'
+    else:
+        return None
+
+    #
+    # orderCount = f'Orders: {x}'
+    # return orderCount
+
+
 for msg_id in list_of_ids:
     # rates = upload_product_by_id(msg_id, successRate, errorRate, instaCounter)
     #
@@ -313,14 +409,25 @@ for msg_id in list_of_ids:
                             except:
                                 logger.debug('no valid price')
                         price = str(price) + dollar
-                        msgTxt = createMsgTXT(title, price, link)
+
+
+                        try:
+                            orderCount = printLingOrdersCount(link)
+                        except:
+                            logger.warning(f'no orders count for this product')
+                            orderCount = ''
+
+
+                        #TODO - NEED TO BACKUP ORDER COUNT FAILED THEN TXT MSG FAIL
+
+                        msgTxt = createMsgTXT(title, price, link, orderCount)
 
 
                         #TODO - Media Group
                         logger.debug(f'sending media group to telegram')
                         resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
 
-                        if instaFlag:
+                        if instaFlag == 'True':
                             instaCounter = uploadInstagramItem(folder_path, instaCounter)
 
 
@@ -330,7 +437,7 @@ for msg_id in list_of_ids:
                         title = '{:<15}'.format(title)  # make title in fixed length
                         if resp.status_code == 200:
                             successRate += 1
-                            printStatus200(msg_id, title, price, link)
+                            printStatus200(msg_id, title, price, link, orderCount)
                         elif resp.status_code == 429:
                             errorRate += 1
                             printStatus429(msg_id, title, price, link, resp)

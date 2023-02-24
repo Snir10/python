@@ -15,6 +15,8 @@ from bs4 import BeautifulSoup as soup
 
     # my_url='https://www.aliexpress.com/category/200003482/dresses/' + str(p)+'.html?site=glo&g=y&SortType=total_tranpro_desc&needQuery=n&tag='
 my_url = 'https://www.aliexpress.com/item/1005003474228451.html?spm=a2g0o.productlist.main.3.596axctbxctbGQ&algo_pvid=f11df15d-f5cf-43d8-8a47-7d83668ec173&algo_exp_id=f11df15d-f5cf-43d8-8a47-7d83668ec173-1&pdp_ext_f=%7B%22sku_id%22%3A%2212000025949310204%22%7D&pdp_npi=3%40dis%21USD%2114.53%217.99%21%21%21%21%21%40211bf3f816770957337077616d0761%2112000025949310204%21sea%21IL%21139655206&curPageLogUid=0cVtDVdM2LoK'
+my_url = 'https://he.aliexpress.com/item/1005005242644512.html'
+
 #had to split the above link because it did not fit on one line
 
 uClient = uReq(my_url)
@@ -33,14 +35,15 @@ sleep(1)
 
 string = scripts[16]
 # x = string.contents[0]
-
+# print(string)
 sleep(1)
 
 
 
 x = str(string)[-1056:-1051]
-y = x[1] + x[2] + x[3] + x[4]
-# print(int(y)-229)
+# y = int(x[1] + x[2] + x[3] + x[4])
+orderCount = f'Orders: {x}'
+print(orderCount)
 y = y
     # last_script = script
 #
