@@ -254,7 +254,7 @@ def createMsgTXT(title, price, link, count):
     logger.debug(f'creating a msg with: {title} {price} {link} {count}')
     if count != 'None':
         x = title[:20] + '\t|\t' + \
-                 price + '\n\n' + \
+                 price + '\n' + \
                  count + '\n' + \
                  '\nPlz Follow Images Instructions ☝🏻 \n' + \
                  '\n\t🫴\t' + \
@@ -345,6 +345,7 @@ def printLingOrdersCount(my_url):
     # y = int(x[1] + x[2] + x[3] + x[4])
 
     y = x
+    logger.debug(f'Y Value is: {y}')
     try:
         y = y.replace(':', '')
     except:
@@ -367,6 +368,8 @@ def printLingOrdersCount(my_url):
         logger.debug('no t')
 
     x = y
+
+    logger.debug(f'X value is: {x}')
 
     if isnumeric(x):
         if x == '0':
@@ -429,6 +432,7 @@ for msg_id in list_of_ids:
                         #TODO - Media Group
                         logger.debug(f'sending media group to telegram')
                         resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
+                        logger.debug(f'RESPONSE: {resp.text}')
 
                         if instaFlag == 'True':
                             instaCounter = uploadInstagramItem(folder_path, instaCounter)
