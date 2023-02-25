@@ -229,7 +229,7 @@ def logger_init():
     fh.setFormatter(formatter)
     log.addHandler(fh)
 
-    fh = logging.FileHandler(f'/Users/user/Desktop/Backup_BIG/uploader_{datetime.now().strftime("%b %d, %H-%M-%S")}.log')
+    fh = logging.FileHandler(f'{src_dir_path}/uploader_{datetime.now().strftime("%b %d, %H-%M-%S")}.log')
     fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
     fh.setLevel(logging.DEBUG)
     log.addHandler(fh)
@@ -369,8 +369,11 @@ def printLingOrdersCount(my_url):
     x = y
 
     if isnumeric(x):
-        logger.debug(f'numeric orders count detected: {x}')
-        return f'Orders: {x}'
+        if x == '0':
+            logger.debug(f'numeric orders count detected: {x}')
+            return None
+        else:
+            return f'Orders: {x}'
     else:
         return None
 
