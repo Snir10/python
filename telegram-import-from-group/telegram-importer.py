@@ -36,6 +36,7 @@ def create_csv(path, name):
         header = ['uploaded time', 'title', 'price', 'link', 'next url', 'affiliate_link',  'id', 'images', 'path', 'msg content']
         writer = csv.writer(f)
         writer.writerow(header)
+
 #Rename and Move
 def renameAndMoveFiles(directory_name, ids_obj):
 
@@ -51,6 +52,7 @@ def renameAndMoveFiles(directory_name, ids_obj):
 
         except:
             logger.error(f'Cannot move from\t {handle_fd + item} to {parent_dir + directory_name}')
+
 #Create Folders
 def createItemDirectory(directory_name):
     path = os.path.join(parent_dir, directory_name)
@@ -69,6 +71,7 @@ def createTempImgFolder(param):
     except OSError as e:
         if e.errno != errno.EEXIST:
             pass
+
 #Get Msg TXT
 def getTitle(msg_content):
     try:
@@ -128,6 +131,7 @@ def setAffiliateLink(next_url, no_link_recived_cnt, aliexpress):
         affiliate_link = 'No Ali Express link detected'
         no_link_recived_cnt += 1
     return [affiliate_link, no_link_recived_cnt]
+
 #LOG Handling
 def print_to_log(msg_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count, msg_time, last_msg):
 
@@ -157,7 +161,7 @@ def print_welcome_csv_importer(csvFileName):
     print('###############\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t##############')
     print('###############\t\tWelcome to CSV Importer\t\t\t\t\t\t\t\t\t##############')
     print(f'###############\t\tCSV file =>\t{csvFileName}\t\t\t\t\t\t\t\t##############')
-    print(f'###############\t\twill FINISH importing until -> ID:\t\t\t\t##############')
+    print(f'###############\t\twill FINISH importing until -> ID:{cfg_id}\t\t\t\t##############')
     print('###############\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t##############')
     print(f'##########################################################################################\n')
     sleep(0.5)
@@ -178,6 +182,7 @@ def logger_init():
     logger.addHandler(fh)
 
     return logger
+
 #Config Handling
 def initialConfig():
     # Reading Configs
@@ -190,6 +195,7 @@ def initialConfig():
     # Create the client and connect
     client = TelegramClient(username, api_id, api_hash)
     return [client, phone]
+
 #Create Folder
 def createParentDir():
     path = os.path.join(parent_dir)
@@ -263,6 +269,7 @@ async def main(phone):
     successRate = '0.00%'
     last_main_msg = None
 
+
     print_welcome_csv_importer(csvFile)
     createParentDir()
     createTempImgFolder('products_handling')
@@ -272,15 +279,14 @@ async def main(phone):
     aliexpress = createAliExpressInstance()
 
     while True:
-        # print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
-        #       main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt,'|| SUCESS_RATE', str(successRate), '\n')
-        logger.info(f'Current Offset ID: {offset_id}')
-        logger.info(f'Total Messages Received : {total_messages}')
-        logger.info(f'Message Counter : {main_msg_id_counter}')
-        #TODO - BUG - AFF link summarized as 0 always
-        logger.info(f'Affiliate Links : {affLinkCount}')
-        logger.info(f'Failed Links : {no_link_recived_cnt}')
-        logger.info(f'Success Rate : {successRate}\n')
+        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
+              main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt, '|| SUCESS_RATE', str(successRate), '\n')
+        # logger.info(f'Current Offset ID: {offset_id}')
+        # logger.info(f'Total Messages Received : {total_messages}')
+        # logger.info(f'Message Counter : {main_msg_id_counter}')
+        # logger.info(f'Affiliate Links : {affLinkCount}')
+        # logger.info(f'Failed Links : {no_link_recived_cnt}')
+        # logger.info(f'Success Rate : {successRate}\n')
         history = await client(GetHistoryRequest(
             peer=my_channel,
             offset_id=offset_id,
@@ -310,6 +316,10 @@ async def main(phone):
                 ids_obj.append(id)
                 renameImg(full_file_name, id)
             else: # txt msg + photo
+                if id == cfg_id:
+                    logger.info(f'Finished with ID: {id}')
+                    exit(0)
+
                 logger.debug('txt + photo')
                 main_msg_id_counter += 1
                 if os.listdir(handle_fd): #txt message + handling is conatin photos
@@ -391,4 +401,6 @@ with client:
     parent_dir = config['Telegram']['parent_dir']
     handle_fd = config['Telegram']['handle_fd']
     csvFile = config['Telegram']['csv']
+    cfg_id = config['Telegram']['importer_last_id']
+
     client.loop.run_until_complete(main(phone))
