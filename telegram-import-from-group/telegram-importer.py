@@ -25,6 +25,7 @@ class DateTimeEncoder(json.JSONEncoder):
             return list(o)
 
         return json.JSONEncoder.default(self, o)
+
 #CSV File
 def send_msg_to_csv(message_time, csv_f_name, title, price, link, nexturl, affiliate_link, id, images, parent, dir_name, msgContent):
     with open(parent+csv_f_name, 'a', encoding='UTF8', newline='') as f:
@@ -80,8 +81,6 @@ def getTitle(msg_content):
         logger.error(f'problem with title: -> {msg_content}')
         title = 'error'
     return title
-
-
 def getPrice(msg_content):
     try:
         price = str(re.findall(r"\$\d+(?:\.\d+)?|\d+(?:\.\d+)?\$", msg_content))[:-2]
@@ -100,9 +99,6 @@ def getURL(msg_content):
     except:
         url = ('no url detected')
     return url
-#TODO - TBD
-# def setAffiliateLink():
-#     pass
 def getNextURL(url):
     try:
         x = requests.get(url).url.split('?')[0]
@@ -143,7 +139,7 @@ def print_to_log(msg_id, title, price, url, affiliate_link, new_file_name, ids_o
         status = '[FAILED]'
     logLine = status + '\t' + \
         f'[ID: {msg_id}]  ' \
-        f'Uploaded in: {msg_time} \t' +\
+        f'From: {msg_time} \t' +\
         f'Title: {title} \t' +\
         'Price:' + price + '\t' +\
         'Link:' + url + '\t' +\
@@ -168,7 +164,7 @@ def print_welcome_csv_importer(csvFileName):
 def logger_init():
     # init logger
     logger = logging.getLogger('my_module_name')
-    logger.setLevel(level=logging.INFO)
+    logger.setLevel(level=logging.DEBUG)
     LOG_FORMAT = "%(log_color)s %(asctime)s %(levelname)-6s%(reset)s | %(log_color)s%(message)s%(reset)s"
 
     fh = logging.StreamHandler()
@@ -176,7 +172,9 @@ def logger_init():
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
-    fh = logging.FileHandler(f'logs/importer_{datetime.now().strftime("%b %d, %H:%M:%S")}.log')
+    # fh = logging.FileHandler(f'logs/importer_{datetime.now().strftime("%b %d, %H:%M:%S")}.log')
+    fh = logging.FileHandler(f'{parent_dir}importer_{datetime.now().strftime("%b %d, %H:%M:%S")}.log')
+
     fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
@@ -271,7 +269,7 @@ async def main(phone):
 
 
     print_welcome_csv_importer(csvFile)
-    createParentDir()
+
     createTempImgFolder('products_handling')
     directory_name = ''
 
@@ -339,27 +337,32 @@ async def main(phone):
 
                     try:
                         title = getTitle(last_main_msg.message)
+                        logger.debug(f'Title is: {title}')
                         price = getPrice(last_main_msg.message)
+                        logger.debug(f'price is: {price}')
                         url = getURL(last_main_msg.message)
+                        logger.debug(f'URL is: {url}')
+
                     except:
                         price = '0'
                         title = 'no title'
                         url = 'no url'
-
-
                         logger.error('no title price and URL')
 
 
 
                     next_url = getNextURL(url)
+                    if url.startswith('http://sale.dhgate'):
+                        #BUG from id : 497669
+                        logger.warning('URL is http://sale.dhgate')
+                        resp = 'no resp - bad url'
 
-                    resp = setAffiliateLink(next_url, no_link_recived_cnt, aliexpress)
+                    else:
+                        resp = setAffiliateLink(next_url, no_link_recived_cnt, aliexpress)
+                        affiliate_link = resp[0]
+                        no_link_recived_cnt = resp[1]
 
-                    affiliate_link = resp[0]
-                    no_link_recived_cnt = resp[1]
 
-
-                    #TODO fix calculation
                     x = calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt)
                     successRate = x[0]
                     affLinkCount = x[1]
@@ -396,11 +399,12 @@ list = initialConfig()
 client = list[0]
 phone = list[1]
 with client:
-    logger = logger_init()
-    #TODO - parent dir globally - erase parent dir from functions
+    # logger = logger_init()
     parent_dir = config['Telegram']['parent_dir']
     handle_fd = config['Telegram']['handle_fd']
     csvFile = config['Telegram']['csv']
     cfg_id = config['Telegram']['importer_last_id']
+    createParentDir()
+    logger = logger_init()
 
     client.loop.run_until_complete(main(phone))

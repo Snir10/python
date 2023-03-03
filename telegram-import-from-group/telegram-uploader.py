@@ -38,41 +38,54 @@ from numpy.core.defchararray import isnumeric
         add more error logs
         fix counters  '''
 
-def convertJPG(item):
-    im1 = Image.open(item)
-    im2 = item[:-3] + 'jpg'
-    im1.save(im2)
-    return im2
-def convert_folder_items(parentDir):
-    targetDir = os.listdir(parentDir)
-    orderedDir = []
-
-    logger.debug(f'resizing images and converting to JPG')
-
-    for item in targetDir:
-        if item[-3:] == 'png':
-            jpg_full_path = convertJPG(parentDir + '/' + item)
-
-            image = Image.open(jpg_full_path)
-            logger.debug(f'{item}\t image size is: {image.size}')
+#Init methods
+def print_welcome_csv_uploader(csv_path, len):
+    now = str(datetime.today())[:-7]
+    # print('##########################################################################################')
+    # print('###############\t\tWelcome to CSV Uploader\t\t\t\t\t\t\t\t\t##############')
+    # print(f'###############\t\tCSV file =>\t{csv_path[11:]}\t\t##############')
+    # print(f'###############\t\tItems Count =>\t{len}\t\t\t\t\t\t\t\t\t\t##############')
+    # print(f'###############\t\tChat ID => {chat_id}\t\t\t\t\t\t\t\t##############')
+    # print(f'###############\t\tLog Level => {logLevel}\t\t\t\t\t\t\t\t\t\t##############')
+    # print(f'###############\t\tTimeout => {timeout} Seconds \t\t\t\t\t\t\t\t\t##############')
+    # print(f'###############\t\tInstagram Flag: {instaFlag}\t\t\t\t\t\t\t\t\t##############')
+    # print('##########################################################################################\n')
 
 
-            image = image.convert("RGB")
-            image = image.resize((1080, 1080))
-            image.save(jpg_full_path)
+    logger.info(f'\n##########################################################################################\n' +
+    f'###############\t\tWelcome to CSV Uploader\t\t\t\t\t\t\t\t\t##############\n' +
+    f'###############\t\t                           \t\t\t\t\t\t\t\t##############\n' +
 
-            # image.resize(1080, 1080)
-            logger.debug(f'{item}\t new image size is: {image.size}')
+    f'###############\t\tCSV file =>\t{csv_path[11:]}\t\t##############\n' +
+    f'###############\t\tItems =>\t{len}\t\t\t\t\t\t\t\t\t\t\t##############\n' +
+    f'###############\t\t                           \t\t\t\t\t\t\t\t##############\n' +
+    f'###############\t\tTelegram Upload Chat => {chat_id}\t\t\t\t\t##############\n' +
+    f'###############\t\tInstagram Upload: {instaFlag}\t\t\t\t\t\t\t\t\t##############\n' +
+    f'###############\t\t                           \t\t\t\t\t\t\t\t##############\n' +
+    f'###############\t\tLog Level => {logLevel}\t\tTimeout => {timeout} Seconds\t\t\t##############\n' +
+    # f'###############\t\tTimeout => {timeout} Seconds \t\t\t\t\t\t\t\t\t##############\n' +
+    f'##########################################################################################\n')
 
-            orderedDir.append(pathlib.Path(jpg_full_path))
-            sleep(1)
-            logger.debug(f'Item to add to folder:\t {item}')
+def logger_init():
+    log = logging.getLogger('my_module_name')
+    if logLevel == 'DEBUG':
+        log.setLevel(level=logging.DEBUG)
+    else:
+        log.setLevel(level=logging.INFO)
 
-    # logger.debug(f'ordered list for instagram upload {orderedDir}')
-    #mixing list - to avoid first photo with sizes
-    random.shuffle(orderedDir)
+    LOG_FORMAT = "%(log_color)s %(asctime)s %(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
 
-    return orderedDir
+    fh = logging.StreamHandler()
+    formatter = ColoredFormatter(LOG_FORMAT)
+    fh.setFormatter(formatter)
+    log.addHandler(fh)
+
+    fh = logging.FileHandler(f'{src_dir_path}/uploader_{datetime.now().strftime("%b %d, %H-%M-%S")}.log')
+    fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
+    fh.setLevel(logging.DEBUG)
+    log.addHandler(fh)
+
+    return log
 def open_csv():
     returned_list = []
     with open(csv_path, 'r') as csvfile:
@@ -102,8 +115,54 @@ def open_csv():
 
             returned_list.append(row)
         return returned_list
+def get_ids_from_csv():
+    with open(csv_path) as csv_file:
+        list_of_ids = []
+        for line in csv.DictReader(csv_file):
+            if line['affiliate_link'].__contains__('click.aliexpress'):
+                list_of_ids.append(str(line['id']))
+    return list_of_ids
+def get_item(line):
+    title = line[1]
+    price = str(line[2])
+    link = line[5]
+    folder_path = src_dir_path + 'Item_' + line[6]
+    images = os.listdir(folder_path)
+
+    id = line[6]
+
+    images_path_list = []
+    for image in images:
+        if image[-3:] == 'png':
+            images_path_list.append(folder_path + '/' + image)
+        elif image[-3:] == 'mp4':
+            images_path_list.append(folder_path + '/' + image)
 
 
+    return [id, title, price, link, folder_path, images_path_list]
+
+#Telegram MSG
+def createMsgTXT(title, price, link, count):
+    count = str(count)
+    logger.debug(f'creating a msg with: {title} {price} {link} {count}')
+    if count != 'None':
+        x = title[:20] + '\t|\t' + \
+                 price + '\n' + \
+                 count + '\n' + \
+                 '\nPlz Follow Images Instructions ☝🏻 \n' + \
+                 '\n\t🫴\t' + \
+                 link + '\n'
+
+    else:
+        x = title[:20] + '\t|\t' + \
+                 price + '\n' + \
+                 '\nPlz Follow Images Instructions ☝🏻 \n' + \
+                 '\n\t🫴\t' + \
+                 link + '\n'
+    return x
+
+
+    # return csvLines
 def imagesToMedia(images, caption):
     """
     Use this method to send an album of photos. On success, an array of Messages that were sent is returned.
@@ -144,7 +203,9 @@ def sendMediaGroup(images, folder_path, caption='new message', reply_to_message_
             resp = sendMediaGroup(images=images_path_list, folder_path=folder_path, caption=msgTxt)
         return resp
 
+#HTTP STATUSES
 def printStatus200(id, title, price, link, orderCount):
+    # saveIdToCFG(id)
     orderCount = str(orderCount)
     x = f'[ID:{id}] [SUCCESS]' + ' ' + str(successRate) + '/' + str(errorRate + successRate) + '\t' +\
           title + '\t' +\
@@ -175,66 +236,7 @@ def printStatusUnknown(id, title, price, link, resp):
 
     logger.error(x) # NOT 200
 
-def saveIdToCFG(id):
-    config = configparser.RawConfigParser()
-    config.read('config_files/uploader_config.ini')
-    config.set('Telegram', 'last_uploaded_id', id)
-    cfgfile = open('config_files/uploader_config.ini', 'w')
-    config.write(cfgfile, space_around_delimiters=False)  # use flag in case case you need to avoid white space.
-    cfgfile.close()
-def get_item(line):
-    title = line[1]
-    price = str(line[2])
-    link = line[5]
-    folder_path = src_dir_path + 'Item_' + line[6]
-    images = os.listdir(folder_path)
-
-    id = line[6]
-
-    images_path_list = []
-    for image in images:
-        if image[-3:] == 'png':
-            images_path_list.append(folder_path + '/' + image)
-        elif image[-3:] == 'mp4':
-            images_path_list.append(folder_path + '/' + image)
-
-
-    return [id, title, price, link, folder_path, images_path_list]
-def validate_last_id(id):
-    if id == c['Telegram']['last_uploaded_id']:
-        logging.info(f'### arrived to dest ID: {id} ###')
-        sleep(10)
-        exit(0)
-def print_welcome_csv_uploader(csv_path, len):
-    now = str(datetime.today())[:-7]
-    print('##########################################################################################')
-    print('###############\t\tWelcome to CSV Uploader\t\t\t\t\t\t\t\t\t##############')
-    print(f'###############\t\tCSV file =>\t{csv_path[11:]}\t\t\t\t##############')
-    print(f'###############\t\tItems Count =>\t{len}\t\t\t\t\t\t\t\t\t\t##############')
-    print(f'###############\t\tStarted: {now}\t\t\t\t\t\t\t##############')
-    print(f'###############\t\tInstagram Flag: {instaFlag}\t\t\t\t\t\t\t\t\t##############')
-
-    print('##########################################################################################\n')
-def logger_init():
-    log = logging.getLogger('my_module_name')
-    if logLevel == 'DEBUG':
-        log.setLevel(level=logging.DEBUG)
-    else:
-        log.setLevel(level=logging.INFO)
-
-    LOG_FORMAT = "%(log_color)s %(asctime)s %(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
-
-    fh = logging.StreamHandler()
-    formatter = ColoredFormatter(LOG_FORMAT)
-    fh.setFormatter(formatter)
-    log.addHandler(fh)
-
-    fh = logging.FileHandler(f'{src_dir_path}/uploader_{datetime.now().strftime("%b %d, %H-%M-%S")}.log')
-    fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
-    fh.setLevel(logging.DEBUG)
-    log.addHandler(fh)
-
-    return log
+#INSTAGRAM
 def uploadInstagramItem(folder_path, instaCounter):
     try:
         text_2 = 'New in Stock'
@@ -247,36 +249,55 @@ def uploadInstagramItem(folder_path, instaCounter):
     except:
         logger.warning('error -> no instagram post')
     return instaCounter
+def convertJPG(item):
+    im1 = Image.open(item)
+    im2 = item[:-3] + 'jpg'
+    im1.save(im2)
+    return im2
+def convert_folder_items(parentDir):
+    targetDir = os.listdir(parentDir)
+    orderedDir = []
+
+    logger.debug(f'resizing images and converting to JPG')
+
+    for item in targetDir:
+        if item[-3:] == 'png':
+            jpg_full_path = convertJPG(parentDir + '/' + item)
+
+            image = Image.open(jpg_full_path)
+            logger.debug(f'{item}\t image size is: {image.size}')
 
 
-def createMsgTXT(title, price, link, count):
-    count = str(count)
-    logger.debug(f'creating a msg with: {title} {price} {link} {count}')
-    if count != 'None':
-        x = title[:20] + '\t|\t' + \
-                 price + '\n' + \
-                 count + '\n' + \
-                 '\nPlz Follow Images Instructions ☝🏻 \n' + \
-                 '\n\t🫴\t' + \
-                 link + '\n'
+            image = image.convert("RGB")
+            image = image.resize((1080, 1080))
+            image.save(jpg_full_path)
 
-    else:
-        x = title[:20] + '\t|\t' + \
-                 price + '\n' + \
-                 '\nPlz Follow Images Instructions ☝🏻 \n' + \
-                 '\n\t🫴\t' + \
-                 link + '\n'
-    return x
+            # image.resize(1080, 1080)
+            logger.debug(f'{item}\t new image size is: {image.size}')
 
+            orderedDir.append(pathlib.Path(jpg_full_path))
+            sleep(1)
+            logger.debug(f'Item to add to folder:\t {item}')
 
-    # return csvLines
-def get_ids_from_csv():
-    with open(csv_path) as csv_file:
-        list_of_ids = []
-        for line in csv.DictReader(csv_file):
-            if line['affiliate_link'].__contains__('click.aliexpress'):
-                list_of_ids.append(str(line['id']))
-    return list_of_ids
+    # logger.debug(f'ordered list for instagram upload {orderedDir}')
+    #mixing list - to avoid first photo with sizes
+    random.shuffle(orderedDir)
+
+    return orderedDir
+
+def saveIdToCFG(id):
+    config = configparser.RawConfigParser()
+    config.read('config_files/uploader_config.ini')
+    config.set('Telegram', 'last_uploaded_id', id)
+    cfgfile = open('config_files/uploader_config.ini', 'w')
+    config.write(cfgfile, space_around_delimiters=False)  # use flag in case case you need to avoid white space.
+    cfgfile.close()
+def validate_last_id(id):
+    if id == c['Telegram']['last_uploaded_id']:
+        logging.info(f'### arrived to dest ID: {id} ###')
+        sleep(10)
+        exit(0)
+
 
 
 
