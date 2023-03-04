@@ -299,43 +299,6 @@ def validate_last_id(id):
         exit(0)
 
 
-
-
-c = configparser.ConfigParser()
-c.read("config_files/uploader_config.ini")
-
-bot_id = c['Telegram']['bot_id']
-SEND_MEDIA_GROUP = c['Telegram']['media_group']
-chat_id = c['Telegram']['chat_id']
-src_dir_path = c['Telegram']['src_dir_path']
-csv_path = c['Telegram']['products_csv_path']
-timeout = c['Telegram']['timeout']
-#
-
-username = c['Telegram']['instagram_acc']
-password = c['Telegram']['instagram_pass']
-instaFlag = c['Telegram']['uploadToInstagram']
-logLevel = c['Telegram']['log_level']
-
-# instaFlag = bool(instaFlag)
-
-if instaFlag == 'True':
-    bot = Client()
-    bot.login(username=username, password=password)
-
-
-
-successRate = 0
-errorRate = 0
-instaCounter = 0
-
-logger = logger_init()
-details = open_csv()
-print_welcome_csv_uploader(csv_path, len(details))
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-list_of_ids = get_ids_from_csv()
-
-
 def printLingOrdersCount(my_url):
     # my_url = 'https://www.aliexpress.com/item/1005003474228451.html?spm=a2g0o.productlist.main.3.596axctbxctbGQ&algo_pvid=f11df15d-f5cf-43d8-8a47-7d83668ec173&algo_exp_id=f11df15d-f5cf-43d8-8a47-7d83668ec173-1&pdp_ext_f=%7B%22sku_id%22%3A%2212000025949310204%22%7D&pdp_npi=3%40dis%21USD%2114.53%217.99%21%21%21%21%21%40211bf3f816770957337077616d0761%2112000025949310204%21sea%21IL%21139655206&curPageLogUid=0cVtDVdM2LoK'
     # my_url = 'https://he.aliexpress.com/item/1005005242644512.html'
@@ -404,6 +367,42 @@ def printLingOrdersCount(my_url):
     #
     # orderCount = f'Orders: {x}'
     # return orderCount
+
+
+
+
+c = configparser.ConfigParser()
+c.read("config_files/uploader_config.ini")
+
+bot_id = c['Telegram']['bot_id']
+SEND_MEDIA_GROUP = c['Telegram']['media_group']
+chat_id = c['Telegram']['chat_id']
+src_dir_path = c['Telegram']['src_dir_path']
+csv_path = c['Telegram']['products_csv_path']
+timeout = c['Telegram']['timeout']
+
+username = c['Telegram']['instagram_acc']
+password = c['Telegram']['instagram_pass']
+instaFlag = c['Telegram']['uploadToInstagram']
+logLevel = c['Telegram']['log_level']
+
+# instaFlag = bool(instaFlag)
+
+if instaFlag == 'True':
+    bot = Client()
+    bot.login(username=username, password=password)
+
+
+
+successRate = 0
+errorRate = 0
+instaCounter = 0
+
+logger = logger_init()
+details = open_csv()
+print_welcome_csv_uploader(csv_path, len(details))
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+list_of_ids = get_ids_from_csv()
 
 
 for msg_id in list_of_ids:

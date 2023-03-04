@@ -5,6 +5,7 @@ import os
 import os.path
 import re
 import csv
+import subprocess
 from time import sleep
 from aliexpress_api import AliexpressApi, models
 import logging
@@ -269,16 +270,13 @@ async def main(phone):
 
 
     print_welcome_csv_importer(csvFile)
-
     createTempImgFolder('products_handling')
     directory_name = ''
-
-
     aliexpress = createAliExpressInstance()
 
     while True:
         print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
-              main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt, '|| SUCESS_RATE', str(successRate), '\n')
+              main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt, '|| SUCCESS_RATE', str(successRate), '\n')
         # logger.info(f'Current Offset ID: {offset_id}')
         # logger.info(f'Total Messages Received : {total_messages}')
         # logger.info(f'Message Counter : {main_msg_id_counter}')
@@ -313,6 +311,7 @@ async def main(phone):
                 img_counter += 1
                 ids_obj.append(id)
                 renameImg(full_file_name, id)
+
             else: # txt msg + photo
                 if id == cfg_id:
                     logger.info(f'Finished with ID: {id}')
@@ -320,48 +319,45 @@ async def main(phone):
 
                 logger.debug('txt + photo')
                 main_msg_id_counter += 1
-                if os.listdir(handle_fd): #txt message + handling is conatin photos
+                if os.listdir(handle_fd): #txt message + handling is contained photos
                     id = str(message.id)
                     try:
                         last_id = str(last_main_msg.id)
                         directory_name = 'Item_' + last_id
-
                     except:
                         last_id = 'no last id'
                         logger.warning('no last msg found')
-
-
                     createItemDirectory(directory_name)
                     renameAndMoveFiles(directory_name, ids_obj)
                     messageTime = getMsgUploadedDate(message)
 
                     try:
                         title = getTitle(last_main_msg.message)
-                        logger.debug(f'Title is: {title}')
                         price = getPrice(last_main_msg.message)
-                        logger.debug(f'price is: {price}')
                         url = getURL(last_main_msg.message)
+
+                        logger.debug(f'price is: {price}')
+                        logger.debug(f'Title is: {title}')
                         logger.debug(f'URL is: {url}')
+
+                        if url.startswith('http://sale.dhgate'):
+                            # FIXED BUG from id : 497669
+                            logger.warning('URL is http://sale.dhgate')
+                            # resp = 'no resp - bad url'
+                        next_url = getNextURL(url)
 
                     except:
                         price = '0'
                         title = 'no title'
                         url = 'no url'
+                        next_url = 'no next url'
                         logger.error('no title price and URL')
 
-
-
-                    next_url = getNextURL(url)
-                    if url.startswith('http://sale.dhgate'):
-                        #BUG from id : 497669
-                        logger.warning('URL is http://sale.dhgate')
-                        resp = 'no resp - bad url'
 
                     else:
                         resp = setAffiliateLink(next_url, no_link_recived_cnt, aliexpress)
                         affiliate_link = resp[0]
                         no_link_recived_cnt = resp[1]
-
 
                     x = calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt)
                     successRate = x[0]
@@ -400,6 +396,9 @@ client = list[0]
 phone = list[1]
 with client:
     # logger = logger_init()
+
+    subprocess.call("/Users/user/Desktop/github projects/python/telegram-import-from-group/removeParentDir.py", shell=True)
+
     parent_dir = config['Telegram']['parent_dir']
     handle_fd = config['Telegram']['handle_fd']
     csvFile = config['Telegram']['csv']
