@@ -1,5 +1,6 @@
 import configparser
 import errno
+import glob
 import json
 import os
 import os.path
@@ -16,7 +17,6 @@ from colorlog import ColoredFormatter
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import (GetHistoryRequest)
-###
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, datetime):
@@ -26,11 +26,11 @@ class DateTimeEncoder(json.JSONEncoder):
             return list(o)
 
         return json.JSONEncoder.default(self, o)
-
+#eee
 #CSV File
-def send_msg_to_csv(message_time, csv_f_name, title, price, link, nexturl, affiliate_link, id, images, parent, dir_name, msgContent):
+def send_msg_to_csv(msgDate, csv_f_name, title, price, link, nextUrl, affiliate_link, id, images, parent, dir_name, msgContent):
     with open(parent+csv_f_name, 'a', encoding='UTF8', newline='') as f:
-        data = [message_time, title, price, link, nexturl, affiliate_link, id, images, parent+dir_name, msgContent]
+        data = [msgDate, title, price, link, nextUrl, affiliate_link, id, images, parent+dir_name, msgContent]
         writer = csv.writer(f)
         writer.writerow(data)
 def create_csv(path, name):
@@ -40,7 +40,7 @@ def create_csv(path, name):
         writer.writerow(header)
 
 #Rename and Move
-def renameAndMoveFiles(directory_name, ids_obj):
+def renameAndMoveFiles(directory_name):
 
     #TODO - IF ITEM IS *.MP4 - to handle it as video.
 
@@ -96,19 +96,19 @@ def getPrice(msg_content):
     return price+'$'
 def getURL(msg_content):
     try:
-        url = re.search("(?P<url>https?://[^\s]+)", msg_content).group("url")
+        url = re.search("(?P<url>https?://\S+)", msg_content).group("url")
     except:
-        url = ('no url detected')
+        url = 'no url detected'
     return url
 def getNextURL(url):
     try:
-        x = requests.get(url).url.split('?')[0]
+        res = requests.get(url).url.split('?')[0]
     except:
-        x = 'no url'
-    return x
+        res = 'no url'
+    return res
 def setAffiliateLink(next_url, no_link_recived_cnt, aliexpress):
 
-    if next_url.startswith('https://he.aliexpress.com/item/'):
+    if next_url.startswith('https://he.aliexpress.com/item/') or next_url.startswith('https://www.aliexpress.us/item'):
         resp = aliexpress.get_affiliate_links(next_url)
         logger.debug(f'AliExpress Response:\t{resp}')
         if hasattr(resp[0], 'promotion_link'):
@@ -126,11 +126,11 @@ def setAffiliateLink(next_url, no_link_recived_cnt, aliexpress):
             affiliate_link = 'BROKEN: best.aliexpress.com'
     else:
         affiliate_link = 'No Ali Express link detected'
+        logger.warning(f'Bad link -> {next_url}')
         no_link_recived_cnt += 1
     return [affiliate_link, no_link_recived_cnt]
-
 #LOG Handling
-def print_to_log(msg_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count, msg_time, last_msg):
+def print_to_log(msg_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_count, msg_time):
 
     title = title.strip()[:18]
     title = '{:<15}'.format(title)
@@ -164,23 +164,23 @@ def print_welcome_csv_importer(csvFileName):
     sleep(0.5)
 def logger_init():
     # init logger
-    logger = logging.getLogger('my_module_name')
-    logger.setLevel(level=logging.DEBUG)
+    l = logging.getLogger('my_module_name')
+    l.setLevel(level=logging.DEBUG)
     LOG_FORMAT = "%(log_color)s %(asctime)s %(levelname)-6s%(reset)s | %(log_color)s%(message)s%(reset)s"
 
     fh = logging.StreamHandler()
     formatter = ColoredFormatter(LOG_FORMAT)
     fh.setFormatter(formatter)
-    logger.addHandler(fh)
+    l.addHandler(fh)
 
     # fh = logging.FileHandler(f'logs/importer_{datetime.now().strftime("%b %d, %H:%M:%S")}.log')
     fh = logging.FileHandler(f'{parent_dir}importer_{datetime.now().strftime("%b %d, %H:%M:%S")}.log')
 
     fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
     fh.setLevel(logging.DEBUG)
-    logger.addHandler(fh)
+    l.addHandler(fh)
 
-    return logger
+    return l
 
 #Config Handling
 def initialConfig():
@@ -189,11 +189,11 @@ def initialConfig():
     # Setting configuration values
     api_id = config['Telegram']['api_id']
     api_hash = config['Telegram']['api_hash']
-    phone = config['Telegram']['phone']
+    mobileNum = config['Telegram']['phone']
     username = config['Telegram']['username']
     # Create the client and connect
-    client = TelegramClient(username, api_id, api_hash)
-    return [client, phone]
+    Client = TelegramClient(username, api_id, api_hash)
+    return [Client, mobileNum]
 
 #Create Folder
 def createParentDir():
@@ -204,19 +204,19 @@ def createParentDir():
         if e.errno != errno.EEXIST:
             pass
 def createAliExpressInstance():
-    return AliexpressApi('34061046', '3766ae9cf22b81c88134fb56f71eb03c',models.Language.EN,models.Currency.EUR, 'sn2019')
-def sendMsgInfoToCSV(messageTime, csvFile, title, price, url, next_url, affiliate_link, last_id, ids_obj, parentDir,
+    return AliexpressApi('34061046', '3766ae9cf22b81c88134fb56f71eb03c', models.Language.EN, models.Currency.EUR, 'sn2019')
+def sendMsgInfoToCSV(messageTime, csv_file, title, price, url, next_url, affiliate_link, last_id, ids_obj, parentDir,
                      directory_name, msgContent):
-    if os.path.exists(parentDir + csvFile):
-        send_msg_to_csv(messageTime, csvFile, title, price, url, next_url, affiliate_link, last_id,
+    if os.path.exists(parentDir + csv_file):
+        send_msg_to_csv(messageTime, csv_file, title, price, url, next_url, affiliate_link, last_id,
                         str(ids_obj), parentDir, directory_name, msgContent)
     else:
-        create_csv(parent_dir, csvFile)
-        send_msg_to_csv(messageTime, csvFile, title, price, url, next_url, affiliate_link, last_id,
+        create_csv(parent_dir, csv_file)
+        send_msg_to_csv(messageTime, csv_file, title, price, url, next_url, affiliate_link, last_id,
                         str(ids_obj), parent_dir, directory_name, msgContent)
 def renameImg(full_file_name, id):
     try:
-        if full_file_name[len(full_file_name) - 3 : ] == 'mp4':
+        if full_file_name[len(full_file_name) - 3:] == 'mp4':
             logger.debug(f'mp4 detected {full_file_name}')
             try:
                 os.rename(full_file_name, handle_fd + id + '.mp4')
@@ -235,14 +235,13 @@ def getMsgUploadedDate(message):
 def calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt):
     try:
         affLinkCount = main_msg_id_counter - no_link_recived_cnt
-        x = (affLinkCount / main_msg_id_counter) * 100
-        return [str(round(x, 2)) + '%', affLinkCount]
+        temp = (affLinkCount / main_msg_id_counter) * 100
+        return [str(round(temp, 2)) + '%', affLinkCount]
     except:
         logger.error('failed to calculate success rate')
         return 'error'
 
-
-async def main(phone):
+async def main():
     await client.start()
     # Ensure you're authorized - was ->    if await client.is_user_authorized() == False: !!!
     if not await client.is_user_authorized():
@@ -261,7 +260,7 @@ async def main(phone):
     total_count_limit = 0
     ids_obj = []
     main_msg_id_counter = 0
-    msg_count = 0
+    # msg_count = 0
     img_counter = 0
     no_link_recived_cnt = 0
     affLinkCount = 0
@@ -269,88 +268,77 @@ async def main(phone):
     last_main_msg = None
 
 
-    print_welcome_csv_importer(csvFile)
-    createTempImgFolder('products_handling')
+
     directory_name = ''
-    aliexpress = createAliExpressInstance()
+    # aliexpress = createAliExpressInstance()
 
     while True:
-        print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
-              main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt, '|| SUCCESS_RATE', str(successRate), '\n')
-        # logger.info(f'Current Offset ID: {offset_id}')
-        # logger.info(f'Total Messages Received : {total_messages}')
-        # logger.info(f'Message Counter : {main_msg_id_counter}')
-        # logger.info(f'Affiliate Links : {affLinkCount}')
-        # logger.info(f'Failed Links : {no_link_recived_cnt}')
-        # logger.info(f'Success Rate : {successRate}\n')
-        history = await client(GetHistoryRequest(
-            peer=my_channel,
-            offset_id=offset_id,
-            offset_date=None,
-            add_offset=0,
-            limit=limit,
-            max_id=0,
-            min_id=0,
-            hash=0
-        ))
+
+        await print_current_import_status(affLinkCount, main_msg_id_counter, no_link_recived_cnt, offset_id, successRate, total_messages)
+        history = await client(GetHistoryRequest(peer=my_channel, offset_id=offset_id, offset_date=None, add_offset=0, limit=limit, max_id=0, min_id=0, hash=0))
         if not history.messages:
             break
         messages = history.messages
         for message in messages:
-
-
-
+            sleep(timeout)
             all_messages.append(message.to_dict())
             id = str(message.id)
+            if id == '538159':
+                pass
 
-
-            #photo or video only
-            if message.message == '': # MSG with photo only
-                logger.debug('photo')
+            if message.message == '': # PHOTO \ VIDEO only
+                logger.debug(f'[ID:{id}] PHOTO \ VIDEO Detected')
                 full_file_name = await client.download_media(message.media, parent_dir)
                 img_counter += 1
                 ids_obj.append(id)
                 renameImg(full_file_name, id)
 
-            else: # txt msg + photo
+            else: # TITLE + PHOTO
                 if id == cfg_id:
+                    await print_current_import_status(affLinkCount, main_msg_id_counter, no_link_recived_cnt, offset_id, successRate, total_messages)
                     logger.info(f'Finished with ID: {id}')
                     exit(0)
+                logger.debug(f'[ID:{id}] TITLE + PHOTO Detected')
 
-                logger.debug('txt + photo')
                 main_msg_id_counter += 1
-                if os.listdir(handle_fd): #txt message + handling is contained photos
+                if os.listdir(handle_fd): # TITLE + HANDLING IS NOT EMPTY
                     id = str(message.id)
                     try:
                         last_id = str(last_main_msg.id)
                         directory_name = 'Item_' + last_id
+
+
                     except:
                         last_id = 'no last id'
                         logger.warning('no last msg found')
                     createItemDirectory(directory_name)
-                    renameAndMoveFiles(directory_name, ids_obj)
+                    renameAndMoveFiles(directory_name)
                     messageTime = getMsgUploadedDate(message)
+                    affiliate_link = 'ERROR: line 333'
+
 
                     try:
                         title = getTitle(last_main_msg.message)
                         price = getPrice(last_main_msg.message)
                         url = getURL(last_main_msg.message)
 
-                        logger.debug(f'price is: {price}')
-                        logger.debug(f'Title is: {title}')
-                        logger.debug(f'URL is: {url}')
+                        logger.debug(f'[ID:{id}] TXT + Photo DETECTED => Title: {title} price: {price} URL: {url} images:{ids_obj.__len__()} images = {img_counter}')
+
 
                         if url.startswith('http://sale.dhgate'):
                             # FIXED BUG from id : 497669
                             logger.warning('URL is http://sale.dhgate')
-                            # resp = 'no resp - bad url'
+                            files = glob.glob(handle_fd)
+                            for f in files:
+                                os.remove(f)
+                                logger.warning(f'Removing {f}')
+                            continue
                         next_url = getNextURL(url)
+                        #TODO - this step stuck in ID 497679 where URL is URL is http://sale.dhgate
+
 
                     except:
-                        price = '0'
-                        title = 'no title'
-                        url = 'no url'
-                        next_url = 'no next url'
+                        price = title = url = next_url = 'no val'
                         logger.error('no title price and URL')
 
 
@@ -359,14 +347,21 @@ async def main(phone):
                         affiliate_link = resp[0]
                         no_link_recived_cnt = resp[1]
 
-                    x = calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt)
-                    successRate = x[0]
-                    affLinkCount = x[1]
+                    cal = calculateSuccessRate(main_msg_id_counter, no_link_recived_cnt)
+                    successRate = cal[0]
+                    affLinkCount = cal[1]
                     sendMsgInfoToCSV(messageTime, csvFile, title, price, url, next_url, affiliate_link, last_id,
                                     str(ids_obj), parent_dir, directory_name, last_main_msg.message)
                     new_file_name = ''
                     img_counter += 1
-                    print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter, messageTime, last_main_msg.message)
+
+                    print_to_log(last_id, title, price, url, affiliate_link, new_file_name, ids_obj, img_counter, messageTime)
+
+                    if ids_obj.__len__() > 10:
+                        logger.error(f'IDs OBJ = {ids_obj.__len__()} | Image Counter = {img_counter}')
+                    else:
+                        logger.warning(f'IDs OBJ = {ids_obj.__len__()} | Image Counter = {img_counter}')
+
                     ids_obj = []
                     full_file_name = await client.download_media(message.media, parent_dir)
                     renameImg(full_file_name, id)
@@ -376,7 +371,7 @@ async def main(phone):
 
 
                 else: # handle fd empty + txt message = first message
-                    logger.debug('txt + photo - first message')
+                    logger.debug(f'[ID:{id}][FIRST MSG] TXT + Photo - handle fd empty this should be in the FIRST message ')
 
                     ids_obj.append(id)
                     last_main_msg = message
@@ -390,20 +385,40 @@ async def main(phone):
             total_messages = len(all_messages)
             if total_count_limit != 0 and total_messages >= total_count_limit:
                 break
-config = configparser.ConfigParser()
-list = initialConfig()
-client = list[0]
-phone = list[1]
-with client:
-    # logger = logger_init()
 
+
+async def print_current_import_status(affLinkCount, main_msg_id_counter, no_link_recived_cnt, offset_id, successRate,
+                                      total_messages):
+    # print("\n|| Current Offset ID is:", offset_id, "|| Total Messages:", total_messages, "|| Msg counter:",
+    #       main_msg_id_counter, '|| Affiliate links', str(affLinkCount), "|| Failed Links:", no_link_recived_cnt, '|| SUCCESS_RATE', str(successRate), '\n')
+    logger.info(f'Current Offset ID: {offset_id}')
+    logger.info(f'Total Messages Received : {total_messages}')
+    logger.info(f'Message Counter : {main_msg_id_counter}')
+    logger.info(f'Affiliate Links : {affLinkCount}')
+    logger.info(f'Failed Links : {no_link_recived_cnt}')
+    logger.info(f'Success Rate : {successRate}\n')
+
+
+config = configparser.ConfigParser()
+auth = initialConfig()
+client = auth[0]
+phone = auth[1]
+with client:
+
+    #remove parent if exists
     subprocess.call("/Users/user/Desktop/github projects/python/telegram-import-from-group/removeParentDir.py", shell=True)
 
     parent_dir = config['Telegram']['parent_dir']
     handle_fd = config['Telegram']['handle_fd']
     csvFile = config['Telegram']['csv']
     cfg_id = config['Telegram']['importer_last_id']
+    timeout = int(config['Telegram']['Timeout'])
+
+
     createParentDir()
     logger = logger_init()
+    print_welcome_csv_importer(csvFile)
+    createTempImgFolder('Products_Handling')
+    aliexpress = createAliExpressInstance()
 
-    client.loop.run_until_complete(main(phone))
+    client.loop.run_until_complete(main())

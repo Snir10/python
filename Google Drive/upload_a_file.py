@@ -16,7 +16,7 @@ drive = GoogleDrive(gauth)
 
 # replace the value of this variable
 # with the absolute path of the directory
-path = "/Users/user/Desktop/Backup/Item_444404"
+path = "/Users/user/Desktop/instagram/test/"
 
 # iterating thought all the files/folder
 # of the desired directory

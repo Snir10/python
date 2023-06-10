@@ -6,7 +6,7 @@ from aliexpress_api import AliexpressApi, models
 
 aliexpress = AliexpressApi('34061046', '3766ae9cf22b81c88134fb56f71eb03c', models.Language.EN, models.Currency.EUR, 'sn2019')
 
-with open("/Users/user/Desktop/Backup/products.csv", 'r') as file:
+with open("/Users/user/Desktop/Backup_latest/products.csv", 'r') as file:
   csvreader = csv.reader(file)
 
   list_iterator = iter(csvreader)
